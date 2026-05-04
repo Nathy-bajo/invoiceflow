@@ -8,6 +8,7 @@ pub struct InvoiceCreated {
     pub total_amount: u64,
     pub milestone_count: u8,
     pub expected_client: Option<Pubkey>,
+    pub metadata_uri: Option<String>,
 }
 
 #[event]

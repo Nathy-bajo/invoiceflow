@@ -37,7 +37,7 @@ freelancer creates invoice  ──►  client funds in USDC  ──►  client a
 
 ## Capabilities
 
-**Freelancer can:** create up to 5 milestones in one tx · lock the invoice to a specific client wallet, or leave it open · share a URL the client opens to fund · receive USDC directly to their wallet on each approval · force-release a milestone if the client goes silent past the dispute window · cancel an unfunded invoice and recover the SOL rent · submit a signed Raenest off-ramp intent on-chain (v2 stub).
+**Freelancer can:** create up to 5 milestones in one tx · lock the invoice to a specific client wallet, or leave it open · share a URL the client opens to fund · receive USDC directly to their wallet on each approval · attach an off-chain metadata URI (Arweave / IPFS) so clients can verify each milestone's description against its on-chain sha256 · force-release a milestone if the client goes silent past the dispute window · cancel an unfunded invoice and recover the SOL rent · submit a signed Raenest off-ramp intent on-chain (v2 stub).
 
 **Client can:** fund the full invoice in one click · approve milestones one at a time with fee preview · raise a dispute that pauses auto-release · resolve their own dispute when work is fixed.
 
@@ -152,7 +152,7 @@ In the Vercel dashboard set these env vars (Production + Preview):
 **v3 — protocol features:**
 
 - Optional third-party arbiter for genuine disputes.
-- Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash.
+- ✅ Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash, see `metadata_uri` field on `create_invoice` and the verified-description badges on the invoice page.
 - Mainnet deploy after security audit (Sec3 / OtterSec, ~6–8 weeks).
 
 ## License

@@ -32,6 +32,12 @@ import {
   USDC_MINT,
 } from "@/lib/constants";
 import { bytesToHex } from "@/lib/hash";
+import {
+  fetchMetadata,
+  resolveMetadataUri,
+  verifyMetadata,
+  type InvoiceMetadata,
+} from "@/lib/metadata";
 
 type InvoiceView = {
   pda: PublicKey;
@@ -46,12 +52,24 @@ type InvoiceView = {
   fundedAt: BN;
   lastReleaseAt: BN;
   disputeWindowSeconds: BN;
+  metadataUri: string | null;
   milestones: Array<{
     descriptionHash: number[];
     amount: BN;
     approved: boolean;
     released: boolean;
   }>;
+};
+
+type MetadataState = {
+  loading: boolean;
+  data: InvoiceMetadata | null;
+  verifications: Array<{
+    description: string | null;
+    verified: boolean;
+    reason?: string;
+  }> | null;
+  error: string | null;
 };
 
 export default function InvoicePage() {
@@ -65,6 +83,12 @@ export default function InvoicePage() {
   const [now, setNow] = useState<number>(Math.floor(Date.now() / 1000));
   const [copied, setCopied] = useState(false);
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [metadata, setMetadata] = useState<MetadataState>({
+    loading: false,
+    data: null,
+    verifications: null,
+    error: null,
+  });
 
   // Tick the clock once a second so unlock-at countdowns stay live.
   useEffect(() => {
@@ -106,6 +130,7 @@ export default function InvoicePage() {
         fundedAt: acc.fundedAt,
         lastReleaseAt: acc.lastReleaseAt,
         disputeWindowSeconds: acc.disputeWindowSeconds,
+        metadataUri: acc.metadataUri ?? null,
         milestones: acc.milestones,
       });
       const [vault] = deriveVaultPda(invoicePda);
@@ -123,6 +148,40 @@ export default function InvoicePage() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Fetch + verify off-chain metadata whenever the invoice (and thus its URI
+  // or hashes) loads or changes. Cancellable so a fast invoice swap doesn't
+  // race the network call.
+  useEffect(() => {
+    if (!invoice?.metadataUri) {
+      setMetadata({ loading: false, data: null, verifications: null, error: null });
+      return;
+    }
+    let cancelled = false;
+    setMetadata({ loading: true, data: null, verifications: null, error: null });
+    (async () => {
+      try {
+        const data = await fetchMetadata(invoice.metadataUri!);
+        const verifications = await verifyMetadata(
+          data,
+          invoice.milestones.map((m) => m.descriptionHash)
+        );
+        if (cancelled) return;
+        setMetadata({ loading: false, data, verifications, error: null });
+      } catch (e: any) {
+        if (cancelled) return;
+        setMetadata({
+          loading: false,
+          data: null,
+          verifications: null,
+          error: e?.message ?? "Failed to fetch metadata",
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [invoice?.metadataUri, invoice?.milestones]);
 
   // Make sure a wallet has the USDC ATA we need; create if missing.
   async function ensureAta(owner: PublicKey): Promise<PublicKey> {
@@ -456,9 +515,28 @@ export default function InvoicePage() {
 
         {/* Milestones timeline */}
         <section className="mt-8">
-          <h2 className="text-xs font-medium uppercase tracking-wider text-ink/60">
-            Milestones
-          </h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-ink/60">
+              Milestones
+            </h2>
+            {invoice.metadataUri && (
+              <a
+                href={resolveMetadataUri(invoice.metadataUri)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-ink/60 hover:text-accent"
+                title={invoice.metadataUri}
+              >
+                {metadata.loading
+                  ? "verifying metadata…"
+                  : metadata.error
+                    ? "⚠ metadata fetch failed"
+                    : metadata.verifications?.every((v) => v.verified)
+                      ? "✓ all descriptions verified ↗"
+                      : "metadata ↗"}
+              </a>
+            )}
+          </div>
           <ol className="mt-3 space-y-3">
             {invoice.milestones.map((m, idx) => {
               const canApprove =
@@ -495,10 +573,33 @@ export default function InvoicePage() {
                         <span className="ml-2 text-ink/60">
                           · ${formatUsdc(m.amount.toNumber())}
                         </span>
+                        {metadata.verifications?.[idx]?.verified && (
+                          <span
+                            className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                            title="sha256 of metadata description matches on-chain hash"
+                          >
+                            ✓ verified
+                          </span>
+                        )}
+                        {metadata.verifications?.[idx] &&
+                          !metadata.verifications[idx].verified && (
+                            <span
+                              className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700 ring-1 ring-inset ring-red-200"
+                              title={metadata.verifications[idx].reason}
+                            >
+                              ⚠ unverified
+                            </span>
+                          )}
                       </div>
-                      <div className="mt-1 truncate font-mono text-[11px] text-ink/40">
-                        sha256: {bytesToHex(m.descriptionHash).slice(0, 32)}…
-                      </div>
+                      {metadata.verifications?.[idx]?.description ? (
+                        <div className="mt-1 truncate text-xs text-ink/70">
+                          {metadata.verifications[idx].description}
+                        </div>
+                      ) : (
+                        <div className="mt-1 truncate font-mono text-[11px] text-ink/40">
+                          sha256: {bytesToHex(m.descriptionHash).slice(0, 32)}…
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {m.released && (

@@ -19,6 +19,7 @@ import {
 } from "@/lib/program";
 import { explorerTx, FEE_BPS, ONE_USDC, USDC_MINT } from "@/lib/constants";
 import { sha256Bytes } from "@/lib/hash";
+import { buildMetadataJson, downloadAsFile } from "@/lib/metadata";
 
 type FormMilestone = { description: string; amount: string };
 
@@ -36,6 +37,7 @@ export default function CreatePage() {
   const [milestones, setMilestones] = useState<FormMilestone[]>(DEFAULT_MILESTONES);
   const [expectedClient, setExpectedClient] = useState("");
   const [disputeWindowHours, setDisputeWindowHours] = useState("72");
+  const [metadataUri, setMetadataUri] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const provider = useMemo(() => {
@@ -112,6 +114,12 @@ export default function CreatePage() {
       }
     }
 
+    const cleanUri = metadataUri.trim();
+    if (cleanUri && cleanUri.length > 200) {
+      toast.error("Metadata URI must be 200 chars or fewer");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const program = getProgram(provider);
@@ -134,7 +142,8 @@ export default function CreatePage() {
           invoiceId,
           milestonesPayload,
           new BN(Math.round(windowHours * 60 * 60)),
-          expected
+          expected,
+          cleanUri || null
         )
         .accountsPartial({
           freelancer: wallet.publicKey,
@@ -265,6 +274,58 @@ export default function CreatePage() {
               If set, only this wallet can fund the invoice.
             </p>
           </div>
+        </section>
+
+        <section className="mt-6 rounded-xl border border-ink/10 bg-white p-4">
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-[11px] font-medium uppercase tracking-wider text-ink/60">
+              Off-chain metadata (optional)
+            </h3>
+            <button
+              type="button"
+              disabled={total <= 0}
+              onClick={() => {
+                const cleanMs = milestones
+                  .map((m) => ({
+                    description: m.description.trim(),
+                    amount: parseFloat(m.amount),
+                  }))
+                  .filter(
+                    (m) => m.description && !Number.isNaN(m.amount) && m.amount > 0
+                  );
+                if (cleanMs.length === 0) {
+                  toast.error("Fill in at least one milestone first");
+                  return;
+                }
+                downloadAsFile(
+                  "invoice-metadata.json",
+                  buildMetadataJson(cleanMs)
+                );
+                toast.success(
+                  "Downloaded — upload to Arweave / IPFS, then paste the URI below"
+                );
+              }}
+              className="text-[11px] text-accent hover:underline disabled:opacity-30"
+            >
+              Generate JSON →
+            </button>
+          </div>
+          <p className="mt-1.5 text-xs text-ink/50">
+            On-chain we only store a sha256 of each milestone description. Pin a
+            JSON copy to Arweave or IPFS so the client can verify what they're
+            approving — clients verify each entry's hash matches.
+          </p>
+          <input
+            className="mt-3 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-mono text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            placeholder="ar://… or ipfs://… or https://…"
+            value={metadataUri}
+            onChange={(e) => setMetadataUri(e.target.value)}
+            maxLength={200}
+          />
+          <p className="mt-1.5 text-[11px] text-ink/40">
+            Leave blank to skip — the invoice still works, just no rich
+            descriptions for the client.
+          </p>
         </section>
 
         <div className="mt-8 overflow-hidden rounded-xl border border-ink/10 bg-white">
