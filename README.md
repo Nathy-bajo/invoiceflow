@@ -12,6 +12,12 @@
 **Verified end-to-end on devnet** — first completed invoice [`B1ibhBzF…RQ86`](https://explorer.solana.com/address/B1ibhBzF8HX2a2vjmHpNUTA3Aswvv2kHc7rSkVbZRQ86?cluster=devnet) — three txs, status `Completed`:
 1. [create](https://explorer.solana.com/tx/27fTis3crfrEUUA5YxwuJ9BqCdpYPQYodvdyQUdW4PuCYzUDbBuRSDqCR1ACEzYwo6JxfAy6bFDcbb22eie3evDS?cluster=devnet) → 2. [fund](https://explorer.solana.com/tx/2zcrYdWGwVShkS8SZo3vxgrneGttzgZLgGJcVAH1F1kGN7pFH4DBxcFCXuQ2Y9XXiRjAAKL2orkzPMf6aRbnGwxH?cluster=devnet) → 3. [approve + release](https://explorer.solana.com/tx/3sh9f1psNuqKuKnPZArkd3GTRZSoJy55zai84FgGPZdSHfchB6b82nGEdYhbtwtuB6ZFVx6ax2XsLfEBkdhz5ioo?cluster=devnet)
 
+## Demo
+
+[![Watch the 3-min demo](https://img.youtube.com/vi/9ck7z-tXois/maxresdefault.jpg)](https://youtu.be/9ck7z-tXois)
+
+> 3 minutes — freelancer creates an invoice in USDC, client funds in one click, three milestones approve out, freelancer triggers the v2 Raenest off-ramp intent on-chain.
+
 ```
 freelancer creates invoice  ──►  client funds in USDC  ──►  client approves milestone  ──►  freelancer's wallet
                                           │                          │
