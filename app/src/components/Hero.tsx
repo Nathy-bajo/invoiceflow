@@ -43,7 +43,7 @@ export function Hero({ connected }: { connected: boolean }) {
             </span>
           )}
           <a
-            href="https://github.com/"
+            href="https://github.com/Nathy-bajo/invoiceflow"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-ink/70 hover:text-accent"

@@ -32,7 +32,7 @@ export function Footer() {
               <li>
                 <a
                   className="text-ink/70 hover:text-accent"
-                  href="https://github.com/"
+                  href="https://github.com/Nathy-bajo/invoiceflow"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

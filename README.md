@@ -7,7 +7,7 @@
 - Program: [`DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ`](https://explorer.solana.com/address/DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ?cluster=devnet) (v0.1.0 with Raenest payout stub)
 - Config PDA: [`A1fy8dwFrrS8U1jgiYzA7DtEbEYtvgP5AzqY9wNwaYek`](https://explorer.solana.com/address/A1fy8dwFrrS8U1jgiYzA7DtEbEYtvgP5AzqY9wNwaYek?cluster=devnet)
 - Treasury USDC ATA: [`P5hH8Ru8WwRkPy2rvxXzDRQpVGkedaDvU2RkPcpVjAe`](https://explorer.solana.com/address/P5hH8Ru8WwRkPy2rvxXzDRQpVGkedaDvU2RkPcpVjAe?cluster=devnet)
-- Frontend: `<vercel-url-after-deploy>`
+- Frontend: [invoiceflow-five-jet.vercel.app](https://invoiceflow-five-jet.vercel.app)
 
 ```
 freelancer creates invoice  ──►  client funds in USDC  ──►  client approves milestone  ──►  freelancer's wallet
