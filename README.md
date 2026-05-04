@@ -130,15 +130,6 @@ In the Vercel dashboard set these env vars (Production + Preview):
 - `NEXT_PUBLIC_RPC_ENDPOINT=https://api.devnet.solana.com` (or your private RPC)
 - `NEXT_PUBLIC_PROGRAM_ID=DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ`
 
-## Demo flow (3-min recording)
-
-1. **Wallet A (freelancer)** opens `/create`, defines a $1,500 invoice with three $500 milestones (Design / Build / Ship), 72-hour dispute window. Clicks Create. Lands on the invoice page, copies the share link.
-2. **Wallet B (client)** opens the same link, clicks "Fund $1,500 USDC". Status flips Open → Funded; vault balance shows $1,500.
-3. Back to **Wallet A** — the invoice now appears under "client" role for B and "freelancer" role for A.
-4. **Wallet B** clicks Approve on milestone 1. Wallet A's USDC balance jumps by $497.50 and treasury by $2.50.
-5. Repeat for milestones 2 and 3 — invoice goes Completed.
-6. *(Optional second invoice)* **Wallet B** raises a dispute, then resolves it — and the auto-release button appears once the timer hits zero (use a short window for the demo).
-
 ## Roadmap
 
 **Why this is a Raenest *partnership*, not a competitor.** InvoiceFlow doesn't move money to or from bank accounts — we don't hold reserves, don't have banking licences, don't want to. We're the contract layer that makes "client in NYC pays freelancer in Lagos" go from a 5-day Stripe-or-Wise dance into one-click escrow → approve → off-ramp. Raenest already has the bank relationships, the regulatory licences, and the NGN liquidity. The freelancer sees one product; under the hood it's two complementary fees: ours for the contract leg, Raenest's for the settlement leg.
