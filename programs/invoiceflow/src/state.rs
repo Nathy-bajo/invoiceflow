@@ -86,10 +86,6 @@ pub struct Invoice {
     pub milestone_count: u8,
     pub milestones: Vec<Milestone>,
     /// Optional pointer to off-chain JSON containing the human-readable
-    /// milestone descriptions (e.g. `ar://…`, `ipfs://…`, or an https gateway).
-    /// The on-chain `description_hash` per milestone lets clients verify the
-    /// fetched text without trusting the freelancer's UI. Bounded length so
-    /// account size stays predictable.
     pub metadata_uri: Option<String>,
     pub bump: u8,
 }
