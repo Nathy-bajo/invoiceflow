@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::constants::MAX_MILESTONES;
+use crate::constants::{MAX_METADATA_URI_LENGTH, MAX_MILESTONES};
 
 #[account]
 pub struct Config {
@@ -85,12 +85,15 @@ pub struct Invoice {
     /// Number of valid entries in `milestones`. `<= MAX_MILESTONES`.
     pub milestone_count: u8,
     pub milestones: Vec<Milestone>,
+    /// Optional pointer to off-chain JSON containing the human-readable
+    pub metadata_uri: Option<String>,
     pub bump: u8,
 }
 
 impl Invoice {
-    /// Account size for a `milestone_count`-milestone invoice.
-    pub const fn size(milestone_count: usize) -> usize {
+    /// Account size for a `milestone_count`-milestone invoice with a
+    /// `metadata_uri_len`-byte URI. Pass `None`'s length as 0.
+    pub const fn size(milestone_count: usize, metadata_uri_len: usize) -> usize {
         8 // discriminator
             + 32 // freelancer
             + 32 // client
@@ -105,9 +108,10 @@ impl Invoice {
             + 8  // dispute_window_seconds
             + 1  // milestone_count
             + 4 + milestone_count * Milestone::SIZE // Vec<Milestone>
+            + 1 + 4 + metadata_uri_len // Option<String> metadata_uri
             + 1 // bump
     }
 
     /// Worst-case size — used when allocating with the user-supplied count.
-    pub const MAX_SIZE: usize = Self::size(MAX_MILESTONES);
+    pub const MAX_SIZE: usize = Self::size(MAX_MILESTONES, MAX_METADATA_URI_LENGTH);
 }

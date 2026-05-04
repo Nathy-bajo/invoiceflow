@@ -122,6 +122,7 @@ async function main() {
         },
       ],
       new BN(60 * 60),
+      null,
       null
     )
     .accountsPartial({

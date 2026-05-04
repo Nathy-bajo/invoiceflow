@@ -13,6 +13,9 @@ pub const MIN_DISPUTE_WINDOW_SECONDS: i64 = 60 * 60;
 /// Maximum dispute window — 90 days. Beyond this, the contract is wrong tool.
 pub const MAX_DISPUTE_WINDOW_SECONDS: i64 = 60 * 60 * 24 * 90;
 
+/// Hard cap on the optional off-chain metadata URI
+pub const MAX_METADATA_URI_LENGTH: usize = 200;
+
 /// PDA seeds.
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const INVOICE_SEED: &[u8] = b"invoice";

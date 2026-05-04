@@ -2,15 +2,21 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::constants::{
-    CONFIG_SEED, INVOICE_SEED, MAX_DISPUTE_WINDOW_SECONDS, MAX_MILESTONES,
-    MIN_DISPUTE_WINDOW_SECONDS, VAULT_SEED,
+    CONFIG_SEED, INVOICE_SEED, MAX_DISPUTE_WINDOW_SECONDS, MAX_METADATA_URI_LENGTH,
+    MAX_MILESTONES, MIN_DISPUTE_WINDOW_SECONDS, VAULT_SEED,
 };
 use crate::errors::InvoiceError;
 use crate::events::InvoiceCreated;
 use crate::state::{Config, Invoice, InvoiceStatus, Milestone};
 
 #[derive(Accounts)]
-#[instruction(invoice_id: u64, milestones: Vec<Milestone>)]
+#[instruction(
+    invoice_id: u64,
+    milestones: Vec<Milestone>,
+    dispute_window_seconds: i64,
+    expected_client: Option<Pubkey>,
+    metadata_uri: Option<String>,
+)]
 pub struct CreateInvoice<'info> {
     #[account(mut)]
     pub freelancer: Signer<'info>,
@@ -27,14 +33,17 @@ pub struct CreateInvoice<'info> {
     )]
     pub accepted_mint: Account<'info, Mint>,
 
-    /// The Invoice PDA. Allocated for the user-supplied milestone count
-    /// rather than `MAX_MILESTONES` to keep account rent minimal. Boxed so
-    /// the deserialized Invoice (~290 bytes worst-case) lives on the heap
-    /// — keeps `try_accounts`'s stack frame under Solana's 4KiB limit.
+    /// The Invoice PDA. Allocated for the user-supplied milestone count + URI
+    /// length rather than worst-case, to keep account rent minimal. Boxed so
+    /// the deserialized Invoice (~290 bytes worst-case) lives on the heap —
+    /// keeps `try_accounts`'s stack frame under Solana's 4KiB limit.
     #[account(
         init,
         payer = freelancer,
-        space = Invoice::size(milestones.len()),
+        space = Invoice::size(
+            milestones.len(),
+            metadata_uri.as_ref().map(|s| s.len()).unwrap_or(0),
+        ),
         seeds = [
             INVOICE_SEED,
             freelancer.key().as_ref(),
@@ -67,6 +76,7 @@ pub fn handler(
     milestones: Vec<Milestone>,
     dispute_window_seconds: i64,
     expected_client: Option<Pubkey>,
+    metadata_uri: Option<String>,
 ) -> Result<()> {
     require!(
         !milestones.is_empty() && milestones.len() <= MAX_MILESTONES,
@@ -77,6 +87,12 @@ pub fn handler(
             && dispute_window_seconds <= MAX_DISPUTE_WINDOW_SECONDS,
         InvoiceError::InvalidDisputeWindow
     );
+    if let Some(uri) = metadata_uri.as_ref() {
+        require!(
+            !uri.is_empty() && uri.len() <= MAX_METADATA_URI_LENGTH,
+            InvoiceError::InvalidMetadataUri
+        );
+    }
 
     // Validate milestones: non-zero, fresh state, sum equals total.
     let mut total: u64 = 0;
@@ -106,6 +122,7 @@ pub fn handler(
     invoice.dispute_window_seconds = dispute_window_seconds;
     invoice.milestone_count = milestones.len() as u8;
     invoice.milestones = milestones;
+    invoice.metadata_uri = metadata_uri.clone();
     invoice.bump = ctx.bumps.invoice;
 
     emit!(InvoiceCreated {
@@ -115,6 +132,7 @@ pub fn handler(
         total_amount: total,
         milestone_count: invoice.milestone_count,
         expected_client,
+        metadata_uri,
     });
     Ok(())
 }

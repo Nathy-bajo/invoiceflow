@@ -64,4 +64,7 @@ pub enum InvoiceError {
 
     #[msg("Memo exceeds 200 characters")]
     MemoTooLong,
+
+    #[msg("Metadata URI must be 1..=200 UTF-8 chars")]
+    InvalidMetadataUri,
 }

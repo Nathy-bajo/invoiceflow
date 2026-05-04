@@ -341,7 +341,10 @@ export type Invoiceflow = {
       "name": "createInvoice",
       "docs": [
         "Freelancer creates a new invoice. Allocates the Invoice PDA and the",
-        "vault token account (owned by the Invoice PDA). Status starts Open."
+        "vault token account (owned by the Invoice PDA). Status starts Open.",
+        "`metadata_uri` is an optional pointer to off-chain JSON containing the",
+        "human-readable milestone descriptions; clients verify each entry's",
+        "sha256 against the on-chain `description_hash`."
       ],
       "discriminator": [
         154,
@@ -386,10 +389,10 @@ export type Invoiceflow = {
         {
           "name": "invoice",
           "docs": [
-            "The Invoice PDA. Allocated for the user-supplied milestone count",
-            "rather than `MAX_MILESTONES` to keep account rent minimal. Boxed so",
-            "the deserialized Invoice (~290 bytes worst-case) lives on the heap",
-            "— keeps `try_accounts`'s stack frame under Solana's 4KiB limit."
+            "The Invoice PDA. Allocated for the user-supplied milestone count + URI",
+            "length rather than worst-case, to keep account rent minimal. Boxed so",
+            "the deserialized Invoice (~290 bytes worst-case) lives on the heap —",
+            "keeps `try_accounts`'s stack frame under Solana's 4KiB limit."
           ],
           "writable": true,
           "pda": {
@@ -479,6 +482,12 @@ export type Invoiceflow = {
           "name": "expectedClient",
           "type": {
             "option": "pubkey"
+          }
+        },
+        {
+          "name": "metadataUri",
+          "type": {
+            "option": "string"
           }
         }
       ]
@@ -1125,6 +1134,11 @@ export type Invoiceflow = {
       "code": 6020,
       "name": "memoTooLong",
       "msg": "Memo exceeds 200 characters"
+    },
+    {
+      "code": 6021,
+      "name": "invalidMetadataUri",
+      "msg": "Metadata URI must be 1..=200 UTF-8 chars"
     }
   ],
   "types": [
@@ -1305,6 +1319,19 @@ export type Invoiceflow = {
             }
           },
           {
+            "name": "metadataUri",
+            "docs": [
+              "Optional pointer to off-chain JSON containing the human-readable",
+              "milestone descriptions (e.g. `ar://…`, `ipfs://…`, or an https gateway).",
+              "The on-chain `description_hash` per milestone lets clients verify the",
+              "fetched text without trusting the freelancer's UI. Bounded length so",
+              "account size stays predictable."
+            ],
+            "type": {
+              "option": "string"
+            }
+          },
+          {
             "name": "bump",
             "type": "u8"
           }
@@ -1372,6 +1399,12 @@ export type Invoiceflow = {
             "name": "expectedClient",
             "type": {
               "option": "pubkey"
+            }
+          },
+          {
+            "name": "metadataUri",
+            "type": {
+              "option": "string"
             }
           }
         ]

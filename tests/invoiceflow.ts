@@ -184,7 +184,8 @@ describe("invoiceflow", () => {
         invoiceId,
         milestones,
         new BN(60 * 60), // 1 hour minimum dispute window
-        null
+        null,
+        null // metadata_uri
       )
       .accounts({
         freelancer: freelancer.publicKey,
@@ -399,7 +400,7 @@ describe("invoiceflow", () => {
       },
     ];
     await program.methods
-      .createInvoice(cancelId, milestones, new BN(60 * 60), null)
+      .createInvoice(cancelId, milestones, new BN(60 * 60), null, null)
       .accounts({
         freelancer: freelancer.publicKey,
         config: configPda,
@@ -445,7 +446,7 @@ describe("invoiceflow", () => {
       },
     ];
     await program.methods
-      .createInvoice(id, milestones, new BN(60 * 60), null)
+      .createInvoice(id, milestones, new BN(60 * 60), null, null)
       .accounts({
         freelancer: freelancer.publicKey,
         config: configPda,
@@ -548,7 +549,7 @@ describe("invoiceflow", () => {
     ];
     const expected = Keypair.generate();
     await program.methods
-      .createInvoice(id, milestones, new BN(60 * 60), expected.publicKey)
+      .createInvoice(id, milestones, new BN(60 * 60), expected.publicKey, null)
       .accounts({
         freelancer: freelancer.publicKey,
         config: configPda,
@@ -579,6 +580,70 @@ describe("invoiceflow", () => {
       assert.fail("expected unexpected-client rejection");
     } catch (e) {
       expect(String(e)).to.match(/UnexpectedClient/);
+    }
+  });
+
+  it("stores a metadata_uri on the invoice when provided", async () => {
+    const id = new BN(5);
+    const inv = deriveInvoice(freelancer.publicKey, id);
+    const milestones = [
+      {
+        descriptionHash: descriptionHash("with metadata"),
+        amount: new BN(50 * ONE_USDC),
+        approved: false,
+        released: false,
+      },
+    ];
+    const uri = "ar://J7hSv6t8s9LK0xZAbcDef1234567890abcdef0xqrstuvw";
+    await program.methods
+      .createInvoice(id, milestones, new BN(60 * 60), null, uri)
+      .accounts({
+        freelancer: freelancer.publicKey,
+        config: configPda,
+        acceptedMint: usdcMint,
+        invoice: inv.pda,
+        vault: inv.vault,
+        systemProgram: SystemProgram.programId,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .signers([freelancer])
+      .rpc();
+
+    const fetched = await program.account.invoice.fetch(inv.pda);
+    expect(fetched.metadataUri).to.equal(uri);
+  });
+
+  it("rejects an over-long metadata_uri", async () => {
+    const id = new BN(6);
+    const inv = deriveInvoice(freelancer.publicKey, id);
+    const milestones = [
+      {
+        descriptionHash: descriptionHash("too long"),
+        amount: new BN(10 * ONE_USDC),
+        approved: false,
+        released: false,
+      },
+    ];
+    const tooLong = "ar://" + "x".repeat(250);
+    try {
+      await program.methods
+        .createInvoice(id, milestones, new BN(60 * 60), null, tooLong)
+        .accounts({
+          freelancer: freelancer.publicKey,
+          config: configPda,
+          acceptedMint: usdcMint,
+          invoice: inv.pda,
+          vault: inv.vault,
+          systemProgram: SystemProgram.programId,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .signers([freelancer])
+        .rpc();
+      assert.fail("expected metadata-uri-too-long rejection");
+    } catch (e) {
+      expect(String(e)).to.match(/InvalidMetadataUri/);
     }
   });
 });

@@ -44,12 +44,16 @@ pub mod invoiceflow {
 
     /// Freelancer creates a new invoice. Allocates the Invoice PDA and the
     /// vault token account (owned by the Invoice PDA). Status starts Open.
+    /// `metadata_uri` is an optional pointer to off-chain JSON containing the
+    /// human-readable milestone descriptions; clients verify each entry's
+    /// sha256 against the on-chain `description_hash`.
     pub fn create_invoice(
         ctx: Context<CreateInvoice>,
         invoice_id: u64,
         milestones: Vec<Milestone>,
         dispute_window_seconds: i64,
         expected_client: Option<Pubkey>,
+        metadata_uri: Option<String>,
     ) -> Result<()> {
         instructions::create_invoice::handler(
             ctx,
@@ -57,6 +61,7 @@ pub mod invoiceflow {
             milestones,
             dispute_window_seconds,
             expected_client,
+            metadata_uri,
         )
     }
 
