@@ -1,0 +1,29 @@
+# Build artifacts
+.anchor
+target
+dist
+out
+build
+.next
+coverage
+
+# Dependencies
+node_modules
+.yarn
+
+# OS
+.DS_Store
+**/*.rs.bk
+**/*.log
+.idea/
+.vscode/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Test ledgers
+test-ledger
+
+/docs/

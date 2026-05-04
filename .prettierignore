@@ -1,0 +1,22 @@
+# Generated build output
+target/
+.next/
+node_modules/
+.anchor/
+dist/
+out/
+build/
+coverage/
+
+# Generated IDL + Anchor types
+target/idl/
+target/types/
+app/src/idl/
+
+# Lockfiles
+package-lock.json
+yarn.lock
+Cargo.lock
+
+# Markdown is hand-tuned
+*.md
