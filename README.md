@@ -9,6 +9,9 @@
 - Treasury USDC ATA: [`P5hH8Ru8WwRkPy2rvxXzDRQpVGkedaDvU2RkPcpVjAe`](https://explorer.solana.com/address/P5hH8Ru8WwRkPy2rvxXzDRQpVGkedaDvU2RkPcpVjAe?cluster=devnet)
 - Frontend: [invoiceflow-five-jet.vercel.app](https://invoiceflow-five-jet.vercel.app)
 
+**Verified end-to-end on devnet** — first completed invoice [`B1ibhBzF…RQ86`](https://explorer.solana.com/address/B1ibhBzF8HX2a2vjmHpNUTA3Aswvv2kHc7rSkVbZRQ86?cluster=devnet) — three txs, status `Completed`:
+1. [create](https://explorer.solana.com/tx/27fTis3crfrEUUA5YxwuJ9BqCdpYPQYodvdyQUdW4PuCYzUDbBuRSDqCR1ACEzYwo6JxfAy6bFDcbb22eie3evDS?cluster=devnet) → 2. [fund](https://explorer.solana.com/tx/2zcrYdWGwVShkS8SZo3vxgrneGttzgZLgGJcVAH1F1kGN7pFH4DBxcFCXuQ2Y9XXiRjAAKL2orkzPMf6aRbnGwxH?cluster=devnet) → 3. [approve + release](https://explorer.solana.com/tx/3sh9f1psNuqKuKnPZArkd3GTRZSoJy55zai84FgGPZdSHfchB6b82nGEdYhbtwtuB6ZFVx6ax2XsLfEBkdhz5ioo?cluster=devnet)
+
 ```
 freelancer creates invoice  ──►  client funds in USDC  ──►  client approves milestone  ──►  freelancer's wallet
                                           │                          │
