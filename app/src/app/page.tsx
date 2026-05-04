@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { AnchorProvider } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -12,7 +13,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SkeletonRow } from "@/components/Skeleton";
 import { getProgram, statusToString } from "@/lib/program";
-import { formatUsdc, shortAddress } from "@/lib/constants";
+import { formatUsdc, PROGRAM_ID, shortAddress } from "@/lib/constants";
 
 type InvoiceRow = {
   pda: string;
@@ -48,37 +49,55 @@ export default function Home() {
       try {
         const program = getProgram(provider);
         // Fetch invoices where the connected wallet is freelancer OR client.
-        // Two filtered scans rather than one full scan so we can label each row's role.
+        // We fetch raw program accounts and decode each one inside try/catch so
+        // accounts created against an older Invoice struct (before metadata_uri
+        // was added) get silently skipped instead of crashing the whole list.
+        const decode = (data: Buffer) => {
+          try {
+            return program.coder.accounts.decode("invoice", data) as any;
+          } catch {
+            return null;
+          }
+        };
+
         const [asFreelancer, asClient] = await Promise.all([
-          program.account.invoice.all([
-            { memcmp: { offset: 8, bytes: wallet.publicKey.toBase58() } },
-          ]),
-          program.account.invoice.all([
-            { memcmp: { offset: 8 + 32, bytes: wallet.publicKey.toBase58() } },
-          ]),
+          connection.getProgramAccounts(PROGRAM_ID, {
+            filters: [
+              { memcmp: { offset: 8, bytes: wallet.publicKey.toBase58() } },
+            ],
+          }),
+          connection.getProgramAccounts(PROGRAM_ID, {
+            filters: [
+              { memcmp: { offset: 8 + 32, bytes: wallet.publicKey.toBase58() } },
+            ],
+          }),
         ]);
         if (cancelled) return;
+
+        const buildRow = (
+          pubkey: PublicKey,
+          acc: any,
+          role: "freelancer" | "client"
+        ): InvoiceRow => ({
+          pda: pubkey.toBase58(),
+          invoiceId: acc.invoiceId.toString(),
+          totalAmount: acc.totalAmount.toNumber(),
+          releasedAmount: acc.releasedAmount.toNumber(),
+          status: statusToString(acc.status),
+          client: acc.client.toBase58(),
+          freelancer: acc.freelancer.toBase58(),
+          role,
+        });
+
         const merged: InvoiceRow[] = [
-          ...asFreelancer.map((a) => ({
-            pda: a.publicKey.toBase58(),
-            invoiceId: a.account.invoiceId.toString(),
-            totalAmount: a.account.totalAmount.toNumber(),
-            releasedAmount: a.account.releasedAmount.toNumber(),
-            status: statusToString(a.account.status),
-            client: a.account.client.toBase58(),
-            freelancer: a.account.freelancer.toBase58(),
-            role: "freelancer" as const,
-          })),
-          ...asClient.map((a) => ({
-            pda: a.publicKey.toBase58(),
-            invoiceId: a.account.invoiceId.toString(),
-            totalAmount: a.account.totalAmount.toNumber(),
-            releasedAmount: a.account.releasedAmount.toNumber(),
-            status: statusToString(a.account.status),
-            client: a.account.client.toBase58(),
-            freelancer: a.account.freelancer.toBase58(),
-            role: "client" as const,
-          })),
+          ...asFreelancer.flatMap(({ pubkey, account }) => {
+            const dec = decode(account.data);
+            return dec ? [buildRow(pubkey, dec, "freelancer")] : [];
+          }),
+          ...asClient.flatMap(({ pubkey, account }) => {
+            const dec = decode(account.data);
+            return dec ? [buildRow(pubkey, dec, "client")] : [];
+          }),
         ];
         setRows(merged);
       } catch (e: any) {
@@ -88,7 +107,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [provider, wallet]);
+  }, [provider, wallet, connection]);
 
   return (
     <div className="flex min-h-screen flex-col">
