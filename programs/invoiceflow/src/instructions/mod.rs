@@ -1,4 +1,5 @@
 pub mod approve_milestone;
+pub mod arbiter_resolve;
 pub mod auto_release;
 pub mod cancel_invoice;
 pub mod create_invoice;
@@ -9,12 +10,8 @@ pub mod request_raenest_payout;
 pub mod resolve_dispute;
 pub mod update_config;
 
-// Glob re-export so the auto-generated `__client_accounts_*` and
-// `__cpi_client_accounts_*` modules created by `#[derive(Accounts)]` are
-// reachable from `crate::` (where the `#[program]` macro looks them up).
-// `handler` symbols collide harmlessly across modules — this is a warning,
-// not an error, and we always call `module::handler` explicitly.
 pub use approve_milestone::*;
+pub use arbiter_resolve::*;
 pub use auto_release::*;
 pub use cancel_invoice::*;
 pub use create_invoice::*;

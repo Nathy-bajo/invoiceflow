@@ -16,6 +16,7 @@ use crate::state::{Config, Invoice, InvoiceStatus, Milestone};
     dispute_window_seconds: i64,
     expected_client: Option<Pubkey>,
     metadata_uri: Option<String>,
+    arbiter: Option<Pubkey>,
 )]
 pub struct CreateInvoice<'info> {
     #[account(mut)]
@@ -77,6 +78,7 @@ pub fn handler(
     dispute_window_seconds: i64,
     expected_client: Option<Pubkey>,
     metadata_uri: Option<String>,
+    arbiter: Option<Pubkey>,
 ) -> Result<()> {
     require!(
         !milestones.is_empty() && milestones.len() <= MAX_MILESTONES,
@@ -92,6 +94,20 @@ pub fn handler(
             !uri.is_empty() && uri.len() <= MAX_METADATA_URI_LENGTH,
             InvoiceError::InvalidMetadataUri
         );
+    }
+    if let Some(arb) = arbiter.as_ref() {
+        // Arbiter must be a third party — not the freelancer, and not the
+        // expected client (if scoped). Open invoices skip the client check
+        // since the funder isn't known yet; client = arbiter funding will
+        // bounce naturally on the InvalidArbiter check at resolve time.
+        require_keys_neq!(
+            *arb,
+            ctx.accounts.freelancer.key(),
+            InvoiceError::ArbiterCannotBeParty
+        );
+        if let Some(client) = expected_client.as_ref() {
+            require_keys_neq!(*arb, *client, InvoiceError::ArbiterCannotBeParty);
+        }
     }
 
     // Validate milestones: non-zero, fresh state, sum equals total.
@@ -123,6 +139,7 @@ pub fn handler(
     invoice.milestone_count = milestones.len() as u8;
     invoice.milestones = milestones;
     invoice.metadata_uri = metadata_uri.clone();
+    invoice.arbiter = arbiter;
     invoice.bump = ctx.bumps.invoice;
 
     emit!(InvoiceCreated {
@@ -133,6 +150,7 @@ pub fn handler(
         milestone_count: invoice.milestone_count,
         expected_client,
         metadata_uri,
+        arbiter,
     });
     Ok(())
 }

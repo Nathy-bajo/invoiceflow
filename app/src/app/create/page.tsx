@@ -38,6 +38,7 @@ export default function CreatePage() {
   const [expectedClient, setExpectedClient] = useState("");
   const [disputeWindowHours, setDisputeWindowHours] = useState("72");
   const [metadataUri, setMetadataUri] = useState("");
+  const [arbiter, setArbiter] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const provider = useMemo(() => {
@@ -120,6 +121,24 @@ export default function CreatePage() {
       return;
     }
 
+    let arbiterKey: PublicKey | null = null;
+    if (arbiter.trim()) {
+      try {
+        arbiterKey = new PublicKey(arbiter.trim());
+      } catch {
+        toast.error("Invalid arbiter pubkey");
+        return;
+      }
+      if (arbiterKey.equals(wallet.publicKey)) {
+        toast.error("Arbiter can't be you (the freelancer)");
+        return;
+      }
+      if (expected && arbiterKey.equals(expected)) {
+        toast.error("Arbiter can't be the expected client");
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const program = getProgram(provider);
@@ -143,7 +162,8 @@ export default function CreatePage() {
           milestonesPayload,
           new BN(Math.round(windowHours * 60 * 60)),
           expected,
-          cleanUri || null
+          cleanUri || null,
+          arbiterKey
         )
         .accountsPartial({
           freelancer: wallet.publicKey,
@@ -274,6 +294,22 @@ export default function CreatePage() {
               If set, only this wallet can fund the invoice.
             </p>
           </div>
+        </section>
+
+        <section className="mt-4">
+          <label className="block text-[11px] uppercase tracking-wider text-ink/50">
+            Third-party arbiter (optional)
+          </label>
+          <input
+            className="mt-1 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-mono text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            placeholder="pubkey of someone both parties trust to settle disputes"
+            value={arbiter}
+            onChange={(e) => setArbiter(e.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-ink/50">
+            If set, this wallet can settle a Disputed invoice by splitting the
+            vault between client and freelancer. Cannot be you or the client.
+          </p>
         </section>
 
         <section className="mt-6 rounded-xl border border-ink/10 bg-white p-4">

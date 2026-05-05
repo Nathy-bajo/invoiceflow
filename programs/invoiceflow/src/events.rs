@@ -9,6 +9,19 @@ pub struct InvoiceCreated {
     pub milestone_count: u8,
     pub expected_client: Option<Pubkey>,
     pub metadata_uri: Option<String>,
+    pub arbiter: Option<Pubkey>,
+}
+
+#[event]
+pub struct DisputeArbitrated {
+    pub invoice: Pubkey,
+    pub arbiter: Pubkey,
+    /// USDC sent back to the client.
+    pub refund_to_client: u64,
+    /// USDC the freelancer received (gross of fee).
+    pub freelancer_gross: u64,
+    /// Protocol fee taken from the freelancer's portion.
+    pub fee_to_treasury: u64,
 }
 
 #[event]

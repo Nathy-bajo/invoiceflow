@@ -135,6 +135,132 @@ export type Invoiceflow = {
       ]
     },
     {
+      "name": "arbiterResolve",
+      "docs": [
+        "Third-party arbiter settles a Disputed invoice by splitting the",
+        "remaining vault balance: `refund_to_client_amount` returns to the",
+        "client, the rest goes to the freelancer minus the protocol fee.",
+        "Only callable by the arbiter recorded on the invoice."
+      ],
+      "discriminator": [
+        72,
+        74,
+        145,
+        98,
+        97,
+        32,
+        107,
+        5
+      ],
+      "accounts": [
+        {
+          "name": "arbiter",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "invoice",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  111,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "invoice.freelancer",
+                "account": "invoice"
+              },
+              {
+                "kind": "account",
+                "path": "invoice.invoice_id",
+                "account": "invoice"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "invoice"
+              }
+            ]
+          }
+        },
+        {
+          "name": "freelancerTokenAccount",
+          "docs": [
+            "Freelancer's USDC ATA — receives the freelancer's share (net of fee)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "clientTokenAccount",
+          "docs": [
+            "Client's USDC ATA — receives the refunded amount."
+          ],
+          "writable": true
+        },
+        {
+          "name": "treasuryTokenAccount",
+          "docs": [
+            "Protocol treasury USDC ATA — receives the fee on freelancer's portion."
+          ],
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "refundToClientAmount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "autoReleaseAfterTimeout",
       "docs": [
         "Permissionless: after `dispute_window_seconds` since funding (or last",
@@ -344,7 +470,9 @@ export type Invoiceflow = {
         "vault token account (owned by the Invoice PDA). Status starts Open.",
         "`metadata_uri` is an optional pointer to off-chain JSON containing the",
         "human-readable milestone descriptions; clients verify each entry's",
-        "sha256 against the on-chain `description_hash`."
+        "sha256 against the on-chain `description_hash`. `arbiter` optionally",
+        "names a third party who can adjudicate `Disputed` invoices via",
+        "`arbiter_resolve`."
       ],
       "discriminator": [
         154,
@@ -488,6 +616,12 @@ export type Invoiceflow = {
           "name": "metadataUri",
           "type": {
             "option": "string"
+          }
+        },
+        {
+          "name": "arbiter",
+          "type": {
+            "option": "pubkey"
           }
         }
       ]
@@ -925,6 +1059,19 @@ export type Invoiceflow = {
   ],
   "events": [
     {
+      "name": "disputeArbitrated",
+      "discriminator": [
+        83,
+        247,
+        66,
+        32,
+        102,
+        90,
+        221,
+        59
+      ]
+    },
+    {
       "name": "disputeRaised",
       "discriminator": [
         246,
@@ -1139,6 +1286,26 @@ export type Invoiceflow = {
       "code": 6021,
       "name": "invalidMetadataUri",
       "msg": "Metadata URI must be 1..=200 UTF-8 chars"
+    },
+    {
+      "code": 6022,
+      "name": "arbiterCannotBeParty",
+      "msg": "Arbiter cannot be the freelancer or the expected client"
+    },
+    {
+      "code": 6023,
+      "name": "invalidArbiter",
+      "msg": "Caller is not the arbiter recorded on this invoice"
+    },
+    {
+      "code": 6024,
+      "name": "noArbiterSet",
+      "msg": "This invoice has no arbiter set"
+    },
+    {
+      "code": 6025,
+      "name": "refundExceedsVault",
+      "msg": "Refund amount exceeds the vault balance"
     }
   ],
   "types": [
@@ -1185,6 +1352,43 @@ export type Invoiceflow = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "disputeArbitrated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "invoice",
+            "type": "pubkey"
+          },
+          {
+            "name": "arbiter",
+            "type": "pubkey"
+          },
+          {
+            "name": "refundToClient",
+            "docs": [
+              "USDC sent back to the client."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "freelancerGross",
+            "docs": [
+              "USDC the freelancer received (gross of fee)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "feeToTreasury",
+            "docs": [
+              "Protocol fee taken from the freelancer's portion."
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -1321,14 +1525,22 @@ export type Invoiceflow = {
           {
             "name": "metadataUri",
             "docs": [
-              "Optional pointer to off-chain JSON containing the human-readable",
-              "milestone descriptions (e.g. `ar://…`, `ipfs://…`, or an https gateway).",
-              "The on-chain `description_hash` per milestone lets clients verify the",
-              "fetched text without trusting the freelancer's UI. Bounded length so",
-              "account size stays predictable."
+              "Optional pointer to off-chain JSON containing the human-readable"
             ],
             "type": {
               "option": "string"
+            }
+          },
+          {
+            "name": "arbiter",
+            "docs": [
+              "Optional third-party arbiter pubkey. If set, this wallet may call",
+              "`arbiter_resolve` while the invoice is `Disputed` to settle the",
+              "remaining vault balance between freelancer and client. Cannot be",
+              "the freelancer or the expected client."
+            ],
+            "type": {
+              "option": "pubkey"
             }
           },
           {
@@ -1405,6 +1617,12 @@ export type Invoiceflow = {
             "name": "metadataUri",
             "type": {
               "option": "string"
+            }
+          },
+          {
+            "name": "arbiter",
+            "type": {
+              "option": "pubkey"
             }
           }
         ]

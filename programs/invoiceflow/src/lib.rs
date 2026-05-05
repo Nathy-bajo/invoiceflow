@@ -46,7 +46,9 @@ pub mod invoiceflow {
     /// vault token account (owned by the Invoice PDA). Status starts Open.
     /// `metadata_uri` is an optional pointer to off-chain JSON containing the
     /// human-readable milestone descriptions; clients verify each entry's
-    /// sha256 against the on-chain `description_hash`.
+    /// sha256 against the on-chain `description_hash`. `arbiter` optionally
+    /// names a third party who can adjudicate `Disputed` invoices via
+    /// `arbiter_resolve`.
     pub fn create_invoice(
         ctx: Context<CreateInvoice>,
         invoice_id: u64,
@@ -54,6 +56,7 @@ pub mod invoiceflow {
         dispute_window_seconds: i64,
         expected_client: Option<Pubkey>,
         metadata_uri: Option<String>,
+        arbiter: Option<Pubkey>,
     ) -> Result<()> {
         instructions::create_invoice::handler(
             ctx,
@@ -62,7 +65,19 @@ pub mod invoiceflow {
             dispute_window_seconds,
             expected_client,
             metadata_uri,
+            arbiter,
         )
+    }
+
+    /// Third-party arbiter settles a Disputed invoice by splitting the
+    /// remaining vault balance: `refund_to_client_amount` returns to the
+    /// client, the rest goes to the freelancer minus the protocol fee.
+    /// Only callable by the arbiter recorded on the invoice.
+    pub fn arbiter_resolve(
+        ctx: Context<ArbiterResolve>,
+        refund_to_client_amount: u64,
+    ) -> Result<()> {
+        instructions::arbiter_resolve::handler(ctx, refund_to_client_amount)
     }
 
     /// Client funds the invoice — transfers `total_amount` USDC into the vault.
@@ -107,7 +122,7 @@ pub mod invoiceflow {
     /// v2 ROADMAP STUB: signed intent for off-chain USDC → NGN conversion via
     /// Raenest. Emits `RaenestPayoutRequested` only — no on-chain token
     /// movement. An off-chain indexer is expected to consume the event and
-    /// drive the Raenest API. See `instructions/request_raenest_payout.rs`.
+    /// drive the Raenest API.
     pub fn request_raenest_payout(
         ctx: Context<RequestRaenestPayout>,
         amount: u64,
