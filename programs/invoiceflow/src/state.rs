@@ -87,6 +87,11 @@ pub struct Invoice {
     pub milestones: Vec<Milestone>,
     /// Optional pointer to off-chain JSON containing the human-readable
     pub metadata_uri: Option<String>,
+    /// Optional third-party arbiter pubkey. If set, this wallet may call
+    /// `arbiter_resolve` while the invoice is `Disputed` to settle the
+    /// remaining vault balance between freelancer and client. Cannot be
+    /// the freelancer or the expected client.
+    pub arbiter: Option<Pubkey>,
     pub bump: u8,
 }
 
@@ -109,6 +114,7 @@ impl Invoice {
             + 1  // milestone_count
             + 4 + milestone_count * Milestone::SIZE // Vec<Milestone>
             + 1 + 4 + metadata_uri_len // Option<String> metadata_uri
+            + 1 + 32 // Option<Pubkey> arbiter
             + 1 // bump
     }
 

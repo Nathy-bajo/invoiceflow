@@ -67,4 +67,16 @@ pub enum InvoiceError {
 
     #[msg("Metadata URI must be 1..=200 UTF-8 chars")]
     InvalidMetadataUri,
+
+    #[msg("Arbiter cannot be the freelancer or the expected client")]
+    ArbiterCannotBeParty,
+
+    #[msg("Caller is not the arbiter recorded on this invoice")]
+    InvalidArbiter,
+
+    #[msg("This invoice has no arbiter set")]
+    NoArbiterSet,
+
+    #[msg("Refund amount exceeds the vault balance")]
+    RefundExceedsVault,
 }

@@ -18,6 +18,7 @@ import { Footer } from "@/components/Footer";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
 import { RaenestPayoutModal } from "@/components/RaenestPayoutModal";
+import { ArbiterModal } from "@/components/ArbiterModal";
 import {
   deriveConfigPda,
   deriveVaultPda,
@@ -44,6 +45,7 @@ type InvoiceView = {
   freelancer: PublicKey;
   client: PublicKey;
   expectedClient: PublicKey | null;
+  arbiter: PublicKey | null;
   invoiceId: BN;
   totalAmount: BN;
   releasedAmount: BN;
@@ -83,6 +85,7 @@ export default function InvoicePage() {
   const [now, setNow] = useState<number>(Math.floor(Date.now() / 1000));
   const [copied, setCopied] = useState(false);
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [arbiterOpen, setArbiterOpen] = useState(false);
   const [metadata, setMetadata] = useState<MetadataState>({
     loading: false,
     data: null,
@@ -122,6 +125,7 @@ export default function InvoicePage() {
         freelancer: acc.freelancer,
         client: acc.client,
         expectedClient: acc.expectedClient,
+        arbiter: acc.arbiter ?? null,
         invoiceId: acc.invoiceId,
         totalAmount: acc.totalAmount,
         releasedAmount: acc.releasedAmount,
@@ -351,6 +355,8 @@ export default function InvoicePage() {
 
   const isFreelancer = wallet?.publicKey?.equals(invoice.freelancer) ?? false;
   const isClient = wallet?.publicKey?.equals(invoice.client) ?? false;
+  const isArbiter =
+    !!invoice.arbiter && (wallet?.publicKey?.equals(invoice.arbiter) ?? false);
   const isAssignableClient =
     !isClient &&
     invoice.status === "open" &&
@@ -449,6 +455,15 @@ export default function InvoicePage() {
                 <span className="text-xs">🇳🇬</span> Convert to NGN
               </button>
             )}
+            {isArbiter && invoice.status === "disputed" && (
+              <button
+                onClick={() => setArbiterOpen(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                title="As the arbiter, settle the disputed vault between client and freelancer"
+              >
+                ⚖ Arbitrate
+              </button>
+            )}
           </div>
         </div>
 
@@ -511,6 +526,16 @@ export default function InvoicePage() {
               }
             />
           </div>
+          {invoice.arbiter && (
+            <div className="border-t border-ink/5">
+              <Party
+                role="Arbiter"
+                addr={invoice.arbiter.toBase58()}
+                isYou={isArbiter}
+                hint="can settle disputes"
+              />
+            </div>
+          )}
         </section>
 
         {/* Milestones timeline */}
@@ -671,6 +696,15 @@ export default function InvoicePage() {
         defaultAmount={Math.floor(
           invoice.releasedAmount.toNumber() * 0.995 // approx net of 0.5% fee
         )}
+      />
+      <ArbiterModal
+        open={arbiterOpen}
+        onClose={() => setArbiterOpen(false)}
+        invoicePda={invoice.pda}
+        freelancer={invoice.freelancer}
+        client={invoice.client}
+        vaultBalance={vaultBalance ?? 0}
+        onResolved={reload}
       />
     </div>
   );

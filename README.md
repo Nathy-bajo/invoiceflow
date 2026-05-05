@@ -39,7 +39,7 @@ freelancer creates invoice  ──►  client funds in USDC  ──►  client a
 
 **Freelancer can:** create up to 5 milestones in one tx · lock the invoice to a specific client wallet, or leave it open · share a URL the client opens to fund · receive USDC directly to their wallet on each approval · attach an off-chain metadata URI (Arweave / IPFS) so clients can verify each milestone's description against its on-chain sha256 · force-release a milestone if the client goes silent past the dispute window · cancel an unfunded invoice and recover the SOL rent · submit a signed Raenest off-ramp intent on-chain (v2 stub).
 
-**Client can:** fund the full invoice in one click · approve milestones one at a time with fee preview · raise a dispute that pauses auto-release · resolve their own dispute when work is fixed.
+**Client can:** fund the full invoice in one click · approve milestones one at a time with fee preview · raise a dispute that pauses auto-release · resolve their own dispute when work is fixed · trust an optional third-party arbiter (set by the freelancer at create time) to adjudicate genuine disputes by splitting the vault between the two parties.
 
 **Protocol guarantees:** vault is owned by the invoice PDA, no admin backdoor · fee can never exceed 10% — even the deployer can't set predatory fees · dispute window is bounded between 1 hour and 90 days · all arithmetic is checked, with the fee multiplication widened to 128-bit before narrowing.
 
@@ -142,7 +142,7 @@ In the Vercel dashboard set these env vars (Production + Preview):
 
 **v3 — protocol features:**
 
-- Optional third-party arbiter for genuine disputes.
+- ✅ Optional third-party arbiter for genuine disputes — shipped, see the `arbiter` field on `create_invoice` and the new `arbiter_resolve` instruction.
 - ✅ Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash, see `metadata_uri` field on `create_invoice` and the verified-description badges on the invoice page.
 - Mainnet deploy after security audit (Sec3 / OtterSec, ~6–8 weeks).
 
