@@ -137,14 +137,14 @@ In the Vercel dashboard set these env vars (Production + Preview):
 **v2 — off-chain wiring (on-chain handshake already shipped):**
 
 - ✅ `request_raenest_payout` instruction + `RaenestPayoutRequested` event are live on devnet. The "🇳🇬 Convert to NGN" button on the invoice page submits a signed intent.
-- 🔜 Off-chain Raenest bridge: ~100 lines of TypeScript subscribing to program logs and calling Raenest's USDC→NGN settlement API. Blocked on Raenest API credentials.
+- 🔜 Off-chain Raenest bridge: we subscribe to program logs and calling Raenest's USDC→NGN settlement API. Blocked on Raenest API credentials.
 - 🔜 Helius-webhook indexer feeding a Postgres cache for the dashboard.
 
 **v3 — protocol features:**
 
 - ✅ Optional third-party arbiter for genuine disputes — shipped, see the `arbiter` field on `create_invoice` and the new `arbiter_resolve` instruction.
 - ✅ Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash, see `metadata_uri` field on `create_invoice` and the verified-description badges on the invoice page.
-- Mainnet deploy after security audit (Sec3 / OtterSec, ~6–8 weeks).
+- Mainnet deploy after security audit (Sec3 / OtterSec).
 
 ## License
 
