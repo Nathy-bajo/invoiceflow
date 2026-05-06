@@ -16,7 +16,7 @@
 
 [![Watch the 3-min demo](https://img.youtube.com/vi/9ck7z-tXois/maxresdefault.jpg)](https://youtu.be/9ck7z-tXois)
 
-> 3 minutes — freelancer creates an invoice in USDC, client funds in one click, three milestones approve out, freelancer triggers the v2 Raenest off-ramp intent on-chain.
+> 4 minutes — freelancer creates an invoice in USDC, client funds in one click, three milestones approve out, freelancer triggers the v2 Raenest off-ramp intent on-chain.
 
 ```
 freelancer creates invoice  ──►  client funds in USDC  ──►  client approves milestone  ──►  freelancer's wallet
@@ -127,8 +127,25 @@ vercel --prod
 In the Vercel dashboard set these env vars (Production + Preview):
 
 - `NEXT_PUBLIC_CLUSTER=devnet`
-- `NEXT_PUBLIC_RPC_ENDPOINT=https://api.devnet.solana.com` (or your private RPC)
+- `NEXT_PUBLIC_RPC_ENDPOINT=https://api.devnet.solana.com` (browser RPC; or your private RPC)
 - `NEXT_PUBLIC_PROGRAM_ID=DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ`
+- `SOLANA_RPC_URL=https://api.devnet.solana.com` (server-side RPC for the indexer cache; private Helius URL recommended at scale)
+- `HELIUS_WEBHOOK_SECRET=<long-random-string>` (shared secret used to authenticate the indexer webhook below)
+
+### (Optional) Wire Helius webhook → instant cache invalidation
+
+By default the dashboard reads from a server-side cache (`/api/invoices`) with a 60-second TTL — that's the floor for staleness. If you want the dashboard to update the moment something happens on-chain, point a Helius webhook at the app:
+
+1. Create an account at https://helius.dev and grab an API key.
+2. **Webhooks → Create webhook**:
+   - **Webhook URL**: `https://<your-vercel>.vercel.app/api/webhook`
+   - **Authentication header**: paste your `HELIUS_WEBHOOK_SECRET` value
+   - **Transaction type**: `ANY`
+   - **Account addresses**: `DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ` (the program)
+   - **Webhook type**: `Enhanced`
+3. Save. Helius will POST to your endpoint on every program-touching tx; the receiver calls `revalidateTag("invoices")` so the next dashboard load is fresh.
+
+Without this step the indexer still works — it just refreshes on the 60s TTL. With it, latency goes from ~30s p50 to ~2s p50 (the time Helius takes to relay).
 
 ## Roadmap
 
@@ -142,6 +159,7 @@ In the Vercel dashboard set these env vars (Production + Preview):
 
 **v3 — protocol features:**
 
+- ✅ Helius-webhook indexer + server-side cache replacing the dashboard's direct `getProgramAccounts` scans — shipped, see `app/src/app/api/{invoices,webhook}` and the optional Helius setup in the deploy section above.
 - ✅ Optional third-party arbiter for genuine disputes — shipped, see the `arbiter` field on `create_invoice` and the new `arbiter_resolve` instruction.
 - ✅ Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash, see `metadata_uri` field on `create_invoice` and the verified-description badges on the invoice page.
 - Mainnet deploy after security audit (Sec3 / OtterSec).
