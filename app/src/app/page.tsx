@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { AnchorProvider } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { useEffect, useState } from "react";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
 
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -12,102 +10,52 @@ import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SkeletonRow } from "@/components/Skeleton";
-import { getProgram, statusToString } from "@/lib/program";
-import { formatUsdc, PROGRAM_ID, shortAddress } from "@/lib/constants";
+import { formatUsdc, shortAddress } from "@/lib/constants";
+import type {
+  IndexedInvoice,
+  InvoicesResponse,
+} from "@/lib/indexer/types";
 
-type InvoiceRow = {
-  pda: string;
-  invoiceId: string;
-  totalAmount: number;
-  releasedAmount: number;
-  status: string;
-  client: string;
-  freelancer: string;
-  role: "freelancer" | "client";
-};
+type InvoiceRow = IndexedInvoice;
 
 export default function Home() {
   const wallet = useAnchorWallet();
-  const { connection } = useConnection();
   const [rows, setRows] = useState<InvoiceRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const provider = useMemo(() => {
-    if (!wallet) return null;
-    return new AnchorProvider(connection, wallet, {
-      preflightCommitment: "confirmed",
-    });
-  }, [wallet, connection]);
-
   useEffect(() => {
-    if (!provider || !wallet) {
+    if (!wallet) {
       setRows(null);
       return;
     }
     let cancelled = false;
+    setError(null);
     (async () => {
       try {
-        const program = getProgram(provider);
-        // Fetch invoices where the connected wallet is freelancer OR client.
-        // We fetch raw program accounts and decode each one inside try/catch so
-        // accounts created against an older Invoice struct (before metadata_uri
-        // was added) get silently skipped instead of crashing the whole list.
-        const decode = (data: Buffer) => {
-          try {
-            return program.coder.accounts.decode("invoice", data) as any;
-          } catch {
-            return null;
-          }
-        };
-
-        const [asFreelancer, asClient] = await Promise.all([
-          connection.getProgramAccounts(PROGRAM_ID, {
-            filters: [
-              { memcmp: { offset: 8, bytes: wallet.publicKey.toBase58() } },
-            ],
-          }),
-          connection.getProgramAccounts(PROGRAM_ID, {
-            filters: [
-              { memcmp: { offset: 8 + 32, bytes: wallet.publicKey.toBase58() } },
-            ],
-          }),
-        ]);
+        // Hit our cached indexer endpoint instead of getProgramAccounts
+        // direct from the browser. This funnels all reads through one
+        // server cache (60s TTL, plus tag-based invalidation from the
+        // /api/webhook endpoint when Helius pushes a program update),
+        // so public-RPC throttling stays bounded as the program grows.
+        const res = await fetch(
+          `/api/invoices?wallet=${wallet.publicKey.toBase58()}`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body?.error ?? `HTTP ${res.status}`);
+        }
+        const body = (await res.json()) as InvoicesResponse;
         if (cancelled) return;
-
-        const buildRow = (
-          pubkey: PublicKey,
-          acc: any,
-          role: "freelancer" | "client"
-        ): InvoiceRow => ({
-          pda: pubkey.toBase58(),
-          invoiceId: acc.invoiceId.toString(),
-          totalAmount: acc.totalAmount.toNumber(),
-          releasedAmount: acc.releasedAmount.toNumber(),
-          status: statusToString(acc.status),
-          client: acc.client.toBase58(),
-          freelancer: acc.freelancer.toBase58(),
-          role,
-        });
-
-        const merged: InvoiceRow[] = [
-          ...asFreelancer.flatMap(({ pubkey, account }) => {
-            const dec = decode(account.data);
-            return dec ? [buildRow(pubkey, dec, "freelancer")] : [];
-          }),
-          ...asClient.flatMap(({ pubkey, account }) => {
-            const dec = decode(account.data);
-            return dec ? [buildRow(pubkey, dec, "client")] : [];
-          }),
-        ];
-        setRows(merged);
+        setRows(body.invoices);
       } catch (e: any) {
-        setError(e.message ?? String(e));
+        if (!cancelled) setError(e?.message ?? String(e));
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [provider, wallet, connection]);
+  }, [wallet]);
 
   return (
     <div className="flex min-h-screen flex-col">
