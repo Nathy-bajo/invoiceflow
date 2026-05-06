@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
-import { fetchInvoicesForWallet } from "@/lib/indexer/fetcher";
+import { dbConfigured } from "@/lib/indexer/db";
+import { getInvoicesForWallet } from "@/lib/indexer/repository";
+import { fetchInvoicesForWallet as fetchFromChain } from "@/lib/indexer/fetcher";
 import type { InvoicesResponse } from "@/lib/indexer/types";
 
 const CACHE_TTL_SECONDS = 60;
 
 /**
- * Cached invoice lookup keyed per wallet. Cache lives in Next's data cache
- * (in-memory in dev, Vercel-managed edge cache in prod) and is invalidated
- * either by the natural TTL above or by the `/api/webhook` endpoint when
- * Helius posts a program-touching transaction (tag-based revalidation).
+ * Two read modes:
+ *   1. DB-backed (when DATABASE_URL is set): Postgres SELECT with O(matched-rows)
+ *      cost regardless of program total. Updated by /api/webhook on every
+ *      program-touching tx, so freshness is "Helius-relay latency" — typically
+ *      1–3 seconds.
+ *   2. Chain-direct fallback (when DATABASE_URL is unset): same logic as the
+ *      pre-Postgres indexer — two filtered getProgramAccounts calls wrapped
+ *      in a 60s server cache. Works out of the box without provisioning a DB.
  */
-const getCachedInvoices = unstable_cache(
-  (wallet: string) => fetchInvoicesForWallet(wallet),
+const fetchChainCached = unstable_cache(
+  (wallet: string) => fetchFromChain(wallet),
   ["invoices-by-wallet"],
-  {
-    tags: ["invoices"],
-    revalidate: CACHE_TTL_SECONDS,
-  }
+  { tags: ["invoices"], revalidate: CACHE_TTL_SECONDS }
 );
 
 export async function GET(req: NextRequest) {
@@ -31,21 +34,27 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const invoices = await getCachedInvoices(wallet);
+    const useDb = dbConfigured();
+    const invoices = useDb
+      ? await getInvoicesForWallet(wallet)
+      : await fetchChainCached(wallet);
+
     const body: InvoicesResponse = {
       invoices,
       cachedAt: new Date().toISOString(),
-      ttlSeconds: CACHE_TTL_SECONDS,
-      // unstable_cache doesn't expose a hit/miss flag, so we treat any
-      // successful read as potentially-cached — clients shouldn't rely on it.
-      fromCache: true,
+      ttlSeconds: useDb ? 0 : CACHE_TTL_SECONDS,
+      fromCache: !useDb,
     };
     return NextResponse.json(body, {
-      headers: {
-        // Browser cache hint matches our server cache window; Vercel CDN
-        // honors `s-maxage` when we're not behind authenticated routes.
-        "cache-control": `public, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=${CACHE_TTL_SECONDS * 4}`,
-      },
+      headers: useDb
+        ? {
+            // DB reads are fresh — let CDNs hold them briefly to absorb
+            // bursts but not so long that recently-changed invoices linger.
+            "cache-control": "public, s-maxage=10, stale-while-revalidate=30",
+          }
+        : {
+            "cache-control": `public, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=${CACHE_TTL_SECONDS * 4}`,
+          },
     });
   } catch (e: any) {
     return NextResponse.json(

@@ -132,20 +132,49 @@ In the Vercel dashboard set these env vars (Production + Preview):
 - `SOLANA_RPC_URL=https://api.devnet.solana.com` (server-side RPC for the indexer cache; private Helius URL recommended at scale)
 - `HELIUS_WEBHOOK_SECRET=<long-random-string>` (shared secret used to authenticate the indexer webhook below)
 
-### (Optional) Wire Helius webhook → instant cache invalidation
+### (Optional) Persistent Postgres indexer + Helius webhook
 
-By default the dashboard reads from a server-side cache (`/api/invoices`) with a 60-second TTL — that's the floor for staleness. If you want the dashboard to update the moment something happens on-chain, point a Helius webhook at the app:
+The dashboard works out of the box with a 60-second server cache fronting direct chain reads — fine at hackathon scale. For mainnet-shaped traffic, swap in a persistent Postgres-backed indexer fed by Helius webhooks:
 
-1. Create an account at https://helius.dev and grab an API key.
-2. **Webhooks → Create webhook**:
-   - **Webhook URL**: `https://<your-vercel>.vercel.app/api/webhook`
-   - **Authentication header**: paste your `HELIUS_WEBHOOK_SECRET` value
-   - **Transaction type**: `ANY`
-   - **Account addresses**: `DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ` (the program)
-   - **Webhook type**: `Enhanced`
-3. Save. Helius will POST to your endpoint on every program-touching tx; the receiver calls `revalidateTag("invoices")` so the next dashboard load is fresh.
+1. **Provision a Postgres database.** Any provider works; the cheapest paths are:
+   - **Neon** (free tier, ~30s signup): https://neon.tech → create project → copy the `postgres://...` connection string with `?sslmode=require`
+   - **Vercel Postgres**: dashboard → Storage → Create Database → Postgres → free tier covers up to 60 hours of compute/month
+   - **Supabase**, **Railway**, or any self-hosted Postgres also work — the driver is plain `postgres`
 
-Without this step the indexer still works — it just refreshes on the 60s TTL. With it, latency goes from ~30s p50 to ~2s p50 (the time Helius takes to relay).
+2. **Set `DATABASE_URL`** in the Vercel project (Production + Preview env vars), and locally in `app/.env.local` for development.
+
+3. **Run migrations + backfill** once:
+
+   ```bash
+   DATABASE_URL='postgres://...' npm run migrate:indexer
+   DATABASE_URL='postgres://...' SOLANA_RPC_URL=https://api.devnet.solana.com \
+     npm run backfill:indexer
+   ```
+
+   Migration creates the `invoices` table + indexes; backfill scans the deployed program and upserts every existing invoice. Both are idempotent — safe to re-run after schema changes or program redeploys.
+
+4. **Point a Helius webhook** at the app for real-time updates:
+
+   1. Create an account at https://helius.dev and grab an API key.
+   2. **Webhooks → Create webhook**:
+      - **Webhook URL**: `https://<your-vercel>.vercel.app/api/webhook`
+      - **Authentication header**: paste your `HELIUS_WEBHOOK_SECRET` value
+      - **Transaction type**: `ANY`
+      - **Account addresses**: `DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ` (the program)
+      - **Webhook type**: `Enhanced`
+
+   On every program-touching tx Helius now POSTs to `/api/webhook`. The handler walks the tx's `accountData[]`, fetches each account's current state in one batched RPC call, decodes any that are Invoices, and upserts into Postgres — so the dashboard reflects the change in ~1–3 seconds.
+
+**Modes summary:**
+
+| `DATABASE_URL` | Helius webhook | Read path | Freshness |
+|---|---|---|---|
+| unset | unconfigured | `/api/invoices` → 60s server cache → chain | up to 60s stale |
+| unset | configured | same, but cache busts on each event | ~5s p50 |
+| set | unconfigured | `/api/invoices` → Postgres SELECT | as fresh as last manual `backfill` |
+| **set** | **configured** | **Postgres SELECT, webhook upserts on tx** | **~1–3s p50, queryable, scales** |
+
+The bottom row is the production target. The top row is the "ship it to a hackathon judge with zero setup" default.
 
 ## Roadmap
 
@@ -155,11 +184,11 @@ Without this step the indexer still works — it just refreshes on the 60s TTL. 
 
 - ✅ `request_raenest_payout` instruction + `RaenestPayoutRequested` event are live on devnet. The "🇳🇬 Convert to NGN" button on the invoice page submits a signed intent.
 - 🔜 Off-chain Raenest bridge: we subscribe to program logs and calling Raenest's USDC→NGN settlement API. Blocked on Raenest API credentials.
-- 🔜 Helius-webhook indexer feeding a Postgres cache for the dashboard.
+- ✅ Helius-webhook indexer feeding a Postgres cache for the dashboard — shipped (see v3 row).
 
 **v3 — protocol features:**
 
-- ✅ Helius-webhook indexer + server-side cache replacing the dashboard's direct `getProgramAccounts` scans — shipped, see `app/src/app/api/{invoices,webhook}` and the optional Helius setup in the deploy section above.
+- ✅ Helius-webhook indexer + persistent Postgres cache replacing the dashboard's direct `getProgramAccounts` scans — shipped. Schema in `app/src/lib/indexer/schema.sql`, repo in `app/src/lib/indexer/repository.ts`, migration + backfill scripts in `scripts/{migrate,backfill}-indexer.ts`. Defaults to a 60s server cache when `DATABASE_URL` is unset; flips to DB-backed indexing when configured (see deploy section).
 - ✅ Optional third-party arbiter for genuine disputes — shipped, see the `arbiter` field on `create_invoice` and the new `arbiter_resolve` instruction.
 - ✅ Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash, see `metadata_uri` field on `create_invoice` and the verified-description badges on the invoice page.
 - Mainnet deploy after security audit (Sec3 / OtterSec).
