@@ -1,13 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
+  webpack: (config, { webpack }) => {
     // Required for @solana/wallet-adapter-* in Next.js — they expect a
     // browser-like fs/crypto environment that Webpack 5 doesn't polyfill.
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
     };
+
+    config.plugins.push(
+      new webpack.IgnorePlugin({ resourceRegExp: /^pino-pretty$/ })
+    );
+
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      { module: /node_modules\/ox\// },
+    ];
+
     return config;
   },
 };
