@@ -6,14 +6,8 @@ use crate::errors::InvoiceError;
 use crate::events::DisputeArbitrated;
 use crate::state::{Config, Invoice, InvoiceStatus};
 
-/// Third-party adjudication of a disputed invoice. Only callable by the
-/// `arbiter` recorded on the invoice (set at create time), and only while
-/// status is `Disputed`. The arbiter splits the remaining vault balance:
-/// `refund_to_client_amount` flows back to the client, the rest goes to the
-/// freelancer minus the protocol fee. The invoice is then `Completed` and
-/// the milestone vector is left as historical record (unreleased entries
-/// keep `released = false, approved = false` to indicate arbiter intervention
-/// rather than client approval).
+/// Arbiter splits the remaining vault on a `Disputed` invoice — `refund_to_client_amount`
+/// to client, rest to freelancer minus fee. Status → `Completed`. Only the recorded arbiter.
 #[derive(Accounts)]
 pub struct ArbiterResolve<'info> {
     pub arbiter: Signer<'info>,

@@ -8,19 +8,9 @@ import { PROGRAM_ID } from "@/lib/constants";
 import { dbConfigured } from "@/lib/indexer/db";
 import { upsertInvoice } from "@/lib/indexer/repository";
 
-/**
- * Helius-compatible webhook receiver.
- *
- * Helius posts an array of transaction objects. For each tx we walk
- * `accountData[].account` (every pubkey involved), filter to ones owned by
- * our program, fetch their current data, decode as Invoice, and upsert into
- * Postgres. Vault PDAs and other non-Invoice program accounts decode-fail
- * silently and get skipped — that's the whole point of the try/catch.
- *
- * Without DATABASE_URL set, we fall back to the original behavior: just
- * bust the chain-fallback cache. That keeps the route useful for users who
- * haven't yet provisioned a DB.
- */
+// Walks Helius `accountData[]` per tx, decodes program-owned accounts as
+// Invoice (non-invoices fail decode → silently skipped), upserts into Postgres.
+// Without DATABASE_URL we just bust the chain-fallback cache.
 
 const SERVER_RPC =
   process.env.SOLANA_RPC_URL ||

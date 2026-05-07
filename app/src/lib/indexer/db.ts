@@ -2,14 +2,7 @@ import postgres from "postgres";
 
 let _sql: ReturnType<typeof postgres> | null = null;
 
-/**
- * Singleton Postgres client. Lazy so importing this module on the client
- * (which can't have `pg` resolve cleanly) is harmless — the connection
- * only opens on the first server-side query.
- *
- * `max: 1` because Vercel functions tear down on cold start; reusing one
- * connection per invocation avoids leaking pool members.
- */
+/** Lazy singleton Postgres client. `max: 1` for serverless safety. */
 export function db(): ReturnType<typeof postgres> {
   if (_sql) return _sql;
   const url = process.env.DATABASE_URL;
@@ -29,8 +22,7 @@ export function db(): ReturnType<typeof postgres> {
   return _sql;
 }
 
-/** Returns true iff DATABASE_URL is configured. Used by routes to gracefully
- *  degrade to "no DB configured" rather than 500-erroring. */
+/** True iff DATABASE_URL is set — routes use this to fall back gracefully. */
 export function dbConfigured(): boolean {
   return !!process.env.DATABASE_URL;
 }

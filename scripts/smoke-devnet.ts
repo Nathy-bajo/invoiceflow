@@ -1,21 +1,10 @@
-// End-to-end smoke test against the deployed devnet program.
+// End-to-end devnet smoke test: spawns an ephemeral client, runs create →
+// fund → approve, and asserts the balances moved. Needs ~3 USDC in the deploy
+// wallet's USDC ATA — top up at https://spl-token-faucet.com if empty.
 //
-// Runs as the deploy wallet (which is also the protocol authority + treasury):
-//   1. Creates a fresh "client" keypair, airdrops some SOL, mints USDC to it
-//      via the devnet faucet (https://spl-token-faucet.com works for the canonical
-//      devnet USDC mint).
-//   2. Creates an invoice as the deploy wallet (acting as freelancer).
-//   3. Funds it from the client wallet.
-//   4. Approves milestone 0 and verifies balances flowed.
-//
-// Usage:
 //   ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
 //   ANCHOR_WALLET=~/.config/solana/id.json \
 //   npx tsx scripts/smoke-devnet.ts
-//
-// Requires ~3 USDC in the deploy wallet's USDC ATA (we use one milestone of
-// 0.1 USDC to keep the cost low). If you don't have devnet USDC, fund first:
-//   https://spl-token-faucet.com (mint: 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU)
 
 import * as anchor from "@coral-xyz/anchor";
 import { Program, BN } from "@coral-xyz/anchor";

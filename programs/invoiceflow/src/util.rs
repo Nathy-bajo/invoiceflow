@@ -6,13 +6,9 @@ use crate::errors::InvoiceError;
 use crate::events::{InvoiceCompleted, MilestoneReleased};
 use crate::state::{Config, Invoice, InvoiceStatus};
 
-/// Shared release path used by both `approve_milestone` (client-driven) and
-/// `auto_release_after_timeout` (permissionless after timer).
-///
-/// Validates destination accounts against config, computes the fee split,
-/// signs CPI transfers from the vault using the Invoice PDA seeds, and
-/// updates milestone + invoice state. Emits `MilestoneReleased`, plus
-/// `InvoiceCompleted` if this was the final milestone.
+/// Shared release path for `approve_milestone` and `auto_release_after_timeout`.
+/// Splits the milestone amount: net to freelancer, fee to treasury, signed by
+/// the Invoice PDA.
 pub fn release_milestone<'info>(
     invoice: &mut Account<'info, Invoice>,
     vault: &Account<'info, TokenAccount>,

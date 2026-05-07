@@ -34,10 +34,8 @@ pub struct CreateInvoice<'info> {
     )]
     pub accepted_mint: Account<'info, Mint>,
 
-    /// The Invoice PDA. Allocated for the user-supplied milestone count + URI
-    /// length rather than worst-case, to keep account rent minimal. Boxed so
-    /// the deserialized Invoice (~290 bytes worst-case) lives on the heap —
-    /// keeps `try_accounts`'s stack frame under Solana's 4KiB limit.
+    /// Boxed so the ~290-byte Invoice lives on the heap — keeps `try_accounts`
+    /// under Solana's 4KiB stack limit. Sized to actual milestone + URI len.
     #[account(
         init,
         payer = freelancer,
@@ -96,10 +94,8 @@ pub fn handler(
         );
     }
     if let Some(arb) = arbiter.as_ref() {
-        // Arbiter must be a third party — not the freelancer, and not the
-        // expected client (if scoped). Open invoices skip the client check
-        // since the funder isn't known yet; client = arbiter funding will
-        // bounce naturally on the InvalidArbiter check at resolve time.
+        // Arbiter must be third-party. Open-invoice client check is deferred
+        // to resolve time, where InvalidArbiter catches it naturally.
         require_keys_neq!(
             *arb,
             ctx.accounts.freelancer.key(),

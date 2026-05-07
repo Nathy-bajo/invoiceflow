@@ -8,16 +8,8 @@ import type { InvoicesResponse } from "@/lib/indexer/types";
 
 const CACHE_TTL_SECONDS = 60;
 
-/**
- * Two read modes:
- *   1. DB-backed (when DATABASE_URL is set): Postgres SELECT with O(matched-rows)
- *      cost regardless of program total. Updated by /api/webhook on every
- *      program-touching tx, so freshness is "Helius-relay latency" — typically
- *      1–3 seconds.
- *   2. Chain-direct fallback (when DATABASE_URL is unset): same logic as the
- *      pre-Postgres indexer — two filtered getProgramAccounts calls wrapped
- *      in a 60s server cache. Works out of the box without provisioning a DB.
- */
+// DB-backed when DATABASE_URL is set (Postgres SELECT, webhook-fed).
+// Falls back to a 60s-cached getProgramAccounts scan otherwise.
 const fetchChainCached = unstable_cache(
   (wallet: string) => fetchFromChain(wallet),
   ["invoices-by-wallet"],

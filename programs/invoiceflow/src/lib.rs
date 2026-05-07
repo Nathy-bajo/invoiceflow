@@ -19,8 +19,7 @@ declare_id!("DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ");
 pub mod invoiceflow {
     use super::*;
 
-    /// One-time initializer for protocol-wide config (treasury, fee, accepted mint).
-    /// Called by deployer post-deploy. The PDA seed is fixed so re-running it fails.
+    /// One-time initializer for protocol Config (treasury, fee, mint). Deployer-only.
     pub fn initialize_config(ctx: Context<InitializeConfig>, fee_basis_points: u16) -> Result<()> {
         instructions::initialize_config::handler(ctx, fee_basis_points)
     }
@@ -42,13 +41,9 @@ pub mod invoiceflow {
         )
     }
 
-    /// Freelancer creates a new invoice. Allocates the Invoice PDA and the
-    /// vault token account (owned by the Invoice PDA). Status starts Open.
-    /// `metadata_uri` is an optional pointer to off-chain JSON containing the
-    /// human-readable milestone descriptions; clients verify each entry's
-    /// sha256 against the on-chain `description_hash`. `arbiter` optionally
-    /// names a third party who can adjudicate `Disputed` invoices via
-    /// `arbiter_resolve`.
+    /// Freelancer creates an invoice (Open). Optional `metadata_uri` points
+    /// to off-chain JSON of milestone descriptions; `arbiter` allows a third
+    /// party to settle disputes via `arbiter_resolve`.
     pub fn create_invoice(
         ctx: Context<CreateInvoice>,
         invoice_id: u64,
@@ -69,10 +64,7 @@ pub mod invoiceflow {
         )
     }
 
-    /// Third-party arbiter settles a Disputed invoice by splitting the
-    /// remaining vault balance: `refund_to_client_amount` returns to the
-    /// client, the rest goes to the freelancer minus the protocol fee.
-    /// Only callable by the arbiter recorded on the invoice.
+    /// Arbiter settles a Disputed invoice — refund to client, rest to freelancer minus fee.
     pub fn arbiter_resolve(
         ctx: Context<ArbiterResolve>,
         refund_to_client_amount: u64,
@@ -80,22 +72,18 @@ pub mod invoiceflow {
         instructions::arbiter_resolve::handler(ctx, refund_to_client_amount)
     }
 
-    /// Client funds the invoice — transfers `total_amount` USDC into the vault.
-    /// Locks `client` on the Invoice and transitions Open -> Funded.
+    /// Client funds the invoice (transfers USDC into the vault, Open → Funded).
     pub fn fund_invoice(ctx: Context<FundInvoice>) -> Result<()> {
         instructions::fund_invoice::handler(ctx)
     }
 
-    /// Client approves a single milestone. The milestone amount is split:
-    /// (1 - fee) -> freelancer ATA, fee -> treasury ATA.
-    /// Marks milestone approved+released, advances status to Completed when all done.
+    /// Client approves a milestone — net to freelancer, fee to treasury. Last one → Completed.
     pub fn approve_milestone(ctx: Context<ApproveMilestone>, milestone_idx: u8) -> Result<()> {
         instructions::approve_milestone::handler(ctx, milestone_idx)
     }
 
-    /// Permissionless: after `dispute_window_seconds` since funding (or last
-    /// release), anyone can release the next un-released milestone. This protects
-    /// freelancers from non-responsive clients. Disabled while Disputed.
+    /// Permissionless release after `dispute_window_seconds` of client silence.
+    /// Blocked while Disputed.
     pub fn auto_release_after_timeout(
         ctx: Context<AutoReleaseAfterTimeout>,
         milestone_idx: u8,
@@ -119,10 +107,8 @@ pub mod invoiceflow {
         instructions::cancel_invoice::handler(ctx)
     }
 
-    /// v2 ROADMAP STUB: signed intent for off-chain USDC → NGN conversion via
-    /// Raenest. Emits `RaenestPayoutRequested` only — no on-chain token
-    /// movement. An off-chain indexer is expected to consume the event and
-    /// drive the Raenest API.
+    /// v2 stub: emits a signed `RaenestPayoutRequested` intent for an off-chain
+    /// bridge to consume. No token movement on-chain.
     pub fn request_raenest_payout(
         ctx: Context<RequestRaenestPayout>,
         amount: u64,

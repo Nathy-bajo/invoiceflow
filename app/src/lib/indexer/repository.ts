@@ -19,12 +19,7 @@ type DbRow = {
   dispute_window_seconds: string;
 };
 
-/**
- * Read path: every invoice the wallet is freelancer OR client on, ordered
- * newest-first. This is the query the dashboard calls every time someone
- * connects a wallet — the indexes on `freelancer` and `client` keep it
- * O(matched rows) regardless of the program's total invoice count.
- */
+/** Every invoice where the wallet is freelancer or client, newest first. */
 export async function getInvoicesForWallet(
   walletBase58: string
 ): Promise<IndexedInvoice[]> {
@@ -45,9 +40,7 @@ export async function getInvoicesForWallet(
     ORDER BY created_at DESC
   `) as unknown as DbRow[];
 
-  // The dashboard wants per-row role labels — same row appears once with
-  // role=freelancer if the wallet is freelancer, or role=client otherwise.
-  // (A wallet can't be both on the same invoice — disjoint at the protocol.)
+  // freelancer ≠ client at the protocol level, so role is unambiguous.
   return rows.map((r) => ({
     pda: r.pda,
     invoiceId: r.invoice_id,
@@ -60,15 +53,8 @@ export async function getInvoicesForWallet(
   }));
 }
 
-/**
- * Write path: idempotent upsert, called by both the webhook handler (one
- * row per touched invoice per program tx) and the backfill script (one row
- * per program account on first deploy).
- *
- * Takes a decoded Anchor `Invoice` plus the raw account bytes — we store
- * both because the decoded fields are queryable but the raw bytes future-
- * proof us against new program-side fields we don't know about yet.
- */
+/** Idempotent upsert. `rawAccount` is stored for forward-compat across
+ *  program upgrades that add fields we don't know about yet. */
 export async function upsertInvoice(
   pda: string,
   decoded: any,
