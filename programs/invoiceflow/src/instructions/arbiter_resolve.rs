@@ -120,11 +120,8 @@ pub fn handler(ctx: Context<ArbiterResolve>, refund_to_client_amount: u64) -> Re
             to: ctx.accounts.client_token_account.to_account_info(),
             authority: invoice_info.clone(),
         };
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            cpi,
-            signer,
-        );
+        let cpi_ctx =
+            CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), cpi, signer);
         token::transfer(cpi_ctx, refund_to_client_amount)?;
     }
 
@@ -134,11 +131,8 @@ pub fn handler(ctx: Context<ArbiterResolve>, refund_to_client_amount: u64) -> Re
             to: ctx.accounts.freelancer_token_account.to_account_info(),
             authority: invoice_info.clone(),
         };
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            cpi,
-            signer,
-        );
+        let cpi_ctx =
+            CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), cpi, signer);
         token::transfer(cpi_ctx, freelancer_net)?;
     }
 
@@ -148,11 +142,8 @@ pub fn handler(ctx: Context<ArbiterResolve>, refund_to_client_amount: u64) -> Re
             to: ctx.accounts.treasury_token_account.to_account_info(),
             authority: invoice_info,
         };
-        let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            cpi,
-            signer,
-        );
+        let cpi_ctx =
+            CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), cpi, signer);
         token::transfer(cpi_ctx, fee)?;
     }
 

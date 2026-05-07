@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::constants::{
-    CONFIG_SEED, INVOICE_SEED, MAX_DISPUTE_WINDOW_SECONDS, MAX_METADATA_URI_LENGTH,
-    MAX_MILESTONES, MIN_DISPUTE_WINDOW_SECONDS, VAULT_SEED,
+    CONFIG_SEED, INVOICE_SEED, MAX_DISPUTE_WINDOW_SECONDS, MAX_METADATA_URI_LENGTH, MAX_MILESTONES,
+    MIN_DISPUTE_WINDOW_SECONDS, VAULT_SEED,
 };
 use crate::errors::InvoiceError;
 use crate::events::InvoiceCreated;
