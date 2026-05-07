@@ -188,7 +188,7 @@ The bottom row is the production target. The top row is the "ship it to a hackat
 
 **v3 — protocol features:**
 
-- ✅ Helius-webhook indexer + persistent Postgres cache replacing the dashboard's direct `getProgramAccounts` scans — shipped. Schema in `app/src/lib/indexer/schema.sql`, repo in `app/src/lib/indexer/repository.ts`, migration + backfill scripts in `scripts/{migrate,backfill}-indexer.ts`. Defaults to a 60s server cache when `DATABASE_URL` is unset; flips to DB-backed indexing when configured (see deploy section).
+- ✅ Helius-webhook indexer + persistent Postgres cache replacing the dashboard's direct `getProgramAccounts` scans — shipped. Defaults to a 60s server cache when `DATABASE_URL` is unset; flips to DB-backed indexing when configured (see deploy section).
 - ✅ Optional third-party arbiter for genuine disputes — shipped, see the `arbiter` field on `create_invoice` and the new `arbiter_resolve` instruction.
 - ✅ Invoice metadata URI (Arweave / IPFS) on top of the on-chain description hash, see `metadata_uri` field on `create_invoice` and the verified-description badges on the invoice page.
 - Mainnet deploy after security audit (Sec3 / OtterSec).
