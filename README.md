@@ -165,17 +165,6 @@ The dashboard works out of the box with a 60-second server cache fronting direct
 
    On every program-touching tx Helius now POSTs to `/api/webhook`. The handler walks the tx's `accountData[]`, fetches each account's current state in one batched RPC call, decodes any that are Invoices, and upserts into Postgres — so the dashboard reflects the change in ~1–3 seconds.
 
-**Modes summary:**
-
-| `DATABASE_URL` | Helius webhook | Read path | Freshness |
-|---|---|---|---|
-| unset | unconfigured | `/api/invoices` → 60s server cache → chain | up to 60s stale |
-| unset | configured | same, but cache busts on each event | ~5s p50 |
-| set | unconfigured | `/api/invoices` → Postgres SELECT | as fresh as last manual `backfill` |
-| **set** | **configured** | **Postgres SELECT, webhook upserts on tx** | **~1–3s p50, queryable, scales** |
-
-The bottom row is the production target. The top row is the "ship it to a hackathon judge with zero setup" default.
-
 ## Roadmap
 
 **Why this is a Raenest *partnership*, not a competitor.** InvoiceFlow doesn't move money to or from bank accounts — we don't hold reserves, don't have banking licences, don't want to. We're the contract layer that makes "client in NYC pays freelancer in Lagos" go from a 5-day Stripe-or-Wise dance into one-click escrow → approve → off-ramp. Raenest already has the bank relationships, the regulatory licences, and the NGN liquidity. The freelancer sees one product; under the hood it's two complementary fees: ours for the contract leg, Raenest's for the settlement leg.

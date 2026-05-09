@@ -67,8 +67,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t border-ink/5 pt-6 text-xs text-ink/40">
-          v0.1.0 · Apache-2.0 · Not financial advice. Devnet preview — do not send mainnet
-          USDC.
+          v0.1.0 · Apache-2.0 · Devnet preview.
         </div>
       </div>
     </footer>
