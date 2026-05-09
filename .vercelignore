@@ -1,0 +1,13 @@
+# Anchor + Solana build artifacts (handled outside Vercel)
+.anchor
+target
+test-ledger
+
+# Cargo / Rust
+Cargo.lock
+**/*.rs.bk
+
+docs
+
+# Tests
+tests
