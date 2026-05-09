@@ -26,7 +26,7 @@ type HeliusTx = {
 
 function tryDecode(data: Buffer): any | null {
   try {
-    return coder.decode("invoice", data);
+    return coder.decode("Invoice", data);
   } catch {
     return null;
   }

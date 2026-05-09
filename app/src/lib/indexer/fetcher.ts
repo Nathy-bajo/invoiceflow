@@ -27,7 +27,7 @@ function statusToString(status: any): string {
  */
 function tryDecode(data: Buffer): any | null {
   try {
-    return coder.decode("invoice", data);
+    return coder.decode("Invoice", data);
   } catch {
     return null;
   }
@@ -37,12 +37,15 @@ function buildRow(
   pubkey: PublicKey,
   acc: any,
   role: "freelancer" | "client"
-): IndexedInvoice {
+): IndexedInvoice | null {
+  if (!acc?.invoice_id?.toString || !acc?.total_amount?.toNumber) {
+    return null;
+  }
   return {
     pda: pubkey.toBase58(),
-    invoiceId: acc.invoiceId.toString(),
-    totalAmount: acc.totalAmount.toNumber(),
-    releasedAmount: acc.releasedAmount.toNumber(),
+    invoiceId: acc.invoice_id.toString(),
+    totalAmount: acc.total_amount.toNumber(),
+    releasedAmount: acc.released_amount.toNumber(),
     status: statusToString(acc.status),
     client: acc.client.toBase58(),
     freelancer: acc.freelancer.toBase58(),
@@ -50,16 +53,6 @@ function buildRow(
   };
 }
 
-/**
- * The single hot read path. Two filtered `getProgramAccounts` calls — one
- * for invoices where the wallet is the freelancer (offset 8), one where the
- * wallet is the client (offset 8 + 32). Decoded with a per-account
- * try/catch so any account written under an older Invoice layout silently
- * drops out of the result instead of poisoning the whole response.
- *
- * Designed to be wrapped in a Vercel cache (`unstable_cache`) — this
- * function itself does no caching.
- */
 export async function fetchInvoicesForWallet(
   walletBase58: string
 ): Promise<IndexedInvoice[]> {
@@ -85,14 +78,19 @@ export async function fetchInvoicesForWallet(
     }),
   ]);
 
+  const collect = (
+    list: { pubkey: PublicKey; account: { data: Buffer } }[],
+    role: "freelancer" | "client"
+  ): IndexedInvoice[] =>
+    list.flatMap(({ pubkey, account }) => {
+      const dec = tryDecode(account.data as Buffer);
+      if (!dec) return [];
+      const row = buildRow(pubkey, dec, role);
+      return row ? [row] : [];
+    });
+
   return [
-    ...asFreelancer.flatMap(({ pubkey, account }) => {
-      const dec = tryDecode(account.data as Buffer);
-      return dec ? [buildRow(pubkey, dec, "freelancer")] : [];
-    }),
-    ...asClient.flatMap(({ pubkey, account }) => {
-      const dec = tryDecode(account.data as Buffer);
-      return dec ? [buildRow(pubkey, dec, "client")] : [];
-    }),
+    ...collect(asFreelancer as any, "freelancer"),
+    ...collect(asClient as any, "client"),
   ];
 }

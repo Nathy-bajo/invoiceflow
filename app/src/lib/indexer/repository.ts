@@ -61,13 +61,21 @@ export async function upsertInvoice(
   rawAccount: Uint8Array
 ): Promise<void> {
   const sql = db();
+  if (
+    !decoded.funded_at?.toNumber ||
+    !decoded.last_release_at?.toNumber ||
+    !decoded.dispute_window_seconds?.toString ||
+    !decoded.created_at?.toNumber
+  ) {
+    return;
+  }
   const status = Object.keys(decoded.status)[0] ?? "unknown";
   const arbiter = decoded.arbiter
     ? (decoded.arbiter as PublicKey).toBase58()
     : null;
-  const metadataUri = decoded.metadataUri ?? null;
-  const fundedAt = decoded.fundedAt.toNumber();
-  const lastReleaseAt = decoded.lastReleaseAt.toNumber();
+  const metadataUri = decoded.metadata_uri ?? null;
+  const fundedAt = decoded.funded_at.toNumber();
+  const lastReleaseAt = decoded.last_release_at.toNumber();
 
   await sql`
     INSERT INTO invoices (
@@ -78,16 +86,16 @@ export async function upsertInvoice(
       ${pda},
       ${decoded.freelancer.toBase58()},
       ${decoded.client.toBase58()},
-      ${decoded.invoiceId.toString()},
-      ${decoded.totalAmount.toString()},
-      ${decoded.releasedAmount.toString()},
+      ${decoded.invoice_id.toString()},
+      ${decoded.total_amount.toString()},
+      ${decoded.released_amount.toString()},
       ${status},
       ${metadataUri},
       ${arbiter},
-      to_timestamp(${decoded.createdAt.toNumber()}),
+      to_timestamp(${decoded.created_at.toNumber()}),
       ${fundedAt > 0 ? sql`to_timestamp(${fundedAt})` : null},
       ${lastReleaseAt > 0 ? sql`to_timestamp(${lastReleaseAt})` : null},
-      ${decoded.disputeWindowSeconds.toString()},
+      ${decoded.dispute_window_seconds.toString()},
       ${Buffer.from(rawAccount)},
       now()
     )
