@@ -29,12 +29,14 @@ export const metadata: Metadata = {
       "Get paid in USDC. No frozen accounts. Solana-native invoice + escrow protocol.",
     type: "website",
     locale: "en_US",
+    images: [{ url: "/og.svg", width: 1200, height: 630, alt: "InvoiceFlow" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "InvoiceFlow",
     description:
       "Get paid in USDC. No frozen accounts. Solana-native invoice + escrow protocol.",
+    images: ["/og.svg"],
   },
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
