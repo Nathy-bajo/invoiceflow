@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid gap-8 sm:grid-cols-3">
           <div>
             <div className="flex items-center gap-2 font-mono">
-              <span className="inline-block h-3 w-3 rounded-sm bg-accent" />
+              <img src="/logo.svg" alt="" width={24} height={24} />
               <span className="font-semibold tracking-tight">invoiceflow</span>
             </div>
             <p className="mt-3 text-sm text-ink/60">
