@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="app/public/logo.svg" alt="InvoiceFlow" width="120" />
+</p>
+
 # InvoiceFlow
 
 **Solana-native invoice + escrow protocol.** Freelancers create invoices, international clients fund them with USDC, milestones release on client approval, and unresponsive clients trigger an automatic timeout-based release. Built for the Colosseum + SuperteamNG / Raenest hackathon.
