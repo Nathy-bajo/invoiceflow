@@ -3,16 +3,16 @@ use anchor_lang::prelude::*;
 use crate::errors::InvoiceError;
 use crate::events::RaenestPayoutRequested;
 
-/// Roadmap stub: emit-only on-ramp/off-ramp intent. The freelancer signs an
-/// intent to convert `amount` USDC into NGN via Raenest, addressed to a
-/// Raenest virtual-account ID. No tokens move on-chain — the actual conversion
-/// is performed off-chain by an indexer listening for `RaenestPayoutRequested`
-/// and calling the Raenest API.
+/// Roadmap stub: emit-only off-ramp payout intent. The freelancer signs an
+/// intent to cash out `amount` USDC to local currency, addressed to an
+/// off-ramp provider's virtual-account ID. No tokens move on-chain — the
+/// actual conversion is performed off-chain by an indexer listening for
+/// `RaenestPayoutRequested` and calling the chosen provider's API.
 ///
 /// This is intentionally minimal: the v1 contract layer doesn't presume to
 /// know how the off-ramp settles. By emitting a signed intent we get
 /// non-repudiation (the freelancer's signature on the tx) and a per-invoice
-/// audit trail without coupling the protocol to any one off-ramp.
+/// audit trail without coupling the protocol to any one provider.
 #[derive(Accounts)]
 pub struct RequestRaenestPayout<'info> {
     pub freelancer: Signer<'info>,

@@ -72,8 +72,8 @@ pub struct RaenestPayoutRequested {
     /// indexers to pair a payout with the source escrow.
     pub source_invoice: Option<Pubkey>,
     pub amount: u64,
-    /// Raenest virtual-account identifier (UTF-8). The off-chain bridge maps
-    /// this to a real NGN bank account on Raenest's side.
+    /// Off-ramp provider's virtual-account identifier (UTF-8). The off-chain
+    /// bridge maps this to a real bank account on the provider's side.
     pub raenest_account_id: String,
     /// Free-form note shown on the freelancer's transaction history.
     pub memo: String,

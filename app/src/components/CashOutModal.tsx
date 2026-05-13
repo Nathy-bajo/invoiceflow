@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import { explorerTx, formatUsdc, ONE_USDC } from "@/lib/constants";
 import { getProgram } from "@/lib/program";
 
-export function RaenestPayoutModal({
+export function CashOutModal({
   open,
   onClose,
   freelancer,
@@ -47,7 +47,7 @@ export function RaenestPayoutModal({
       return;
     }
     if (!accountId.trim() || accountId.length > 64) {
-      toast.error("Raenest account id must be 1–64 chars");
+      toast.error("Payout account id must be 1–64 chars");
       return;
     }
 
@@ -104,11 +104,11 @@ export function RaenestPayoutModal({
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-lg font-semibold tracking-tight">
-              Convert to NGN via Raenest
+              Cash out to local currency
             </h3>
             <p className="mt-1 text-sm text-ink/60">
-              Sign an off-ramp intent. Conversion settles to your Raenest NGN account in
-              ~2 minutes after a backend processes the event.
+              Sign an off-ramp intent. Conversion settles to your linked bank
+              account once a backend processes the event.
             </p>
           </div>
           <button
@@ -122,8 +122,8 @@ export function RaenestPayoutModal({
 
         <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-800 ring-1 ring-inset ring-amber-200">
           <span className="font-medium">v2 preview</span> — emits a signed intent
-          on-chain. The Raenest API integration is in progress; no NGN will be disbursed
-          on devnet.
+          on-chain. The off-ramp provider integration is in progress; no funds
+          will be disbursed on devnet.
         </div>
 
         <div className="mt-5 space-y-4">
@@ -149,16 +149,17 @@ export function RaenestPayoutModal({
 
           <div>
             <label className="block text-[11px] uppercase tracking-wider text-ink/50">
-              Raenest virtual account id
+              Payout account id
             </label>
             <input
               value={accountId}
               onChange={(e) => setAccountId(e.target.value)}
-              placeholder="RAENEST-VA-XXXXXXXX"
+              placeholder="payout-account-id"
               className="mt-1 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-mono text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
             <p className="mt-1 text-[11px] text-ink/50">
-              From your Raenest dashboard. Used by the indexer to route NGN to your bank.
+              Your off-ramp provider's virtual-account identifier. Used by the
+              indexer to route funds to your bank.
             </p>
           </div>
 

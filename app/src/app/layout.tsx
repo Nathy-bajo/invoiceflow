@@ -19,8 +19,6 @@ export const metadata: Metadata = {
     "escrow",
     "freelancer",
     "payments",
-    "Nigeria",
-    "Raenest",
     "stablecoin",
   ],
   openGraph: {

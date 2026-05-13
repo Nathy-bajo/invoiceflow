@@ -12,8 +12,8 @@ export function Footer() {
               <span className="font-semibold tracking-tight">invoiceflow</span>
             </div>
             <p className="mt-3 text-sm text-ink/60">
-              Solana-native invoice + escrow protocol. Built for the Colosseum ×
-              SuperteamNG / Raenest hackathon, 2026.
+              Solana-native invoice + escrow protocol. Get paid in USDC with
+              milestone-based release and dispute timeouts.
             </p>
           </div>
           <div className="text-sm">

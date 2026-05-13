@@ -1,10 +1,10 @@
 # <img src="app/public/logo.svg" alt="" width="36" align="absmiddle" /> InvoiceFlow
 
-**Solana-native invoice + escrow protocol.** Freelancers create invoices, international clients fund them with USDC, milestones release on client approval, and unresponsive clients trigger an automatic timeout-based release. Built for the Colosseum + SuperteamNG / Raenest hackathon.
+**Solana-native invoice + escrow protocol.** Freelancers create invoices, international clients fund them with USDC, milestones release on client approval, and unresponsive clients trigger an automatic timeout-based release.
 
 **Live on devnet:**
 
-- Program: [`DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ`](https://explorer.solana.com/address/DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ?cluster=devnet) (v0.1.0 with Raenest payout stub)
+- Program: [`DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ`](https://explorer.solana.com/address/DYkNRoH7goicxXzttxEALr6eRGp5EMkRxxpHQGYt3pAQ?cluster=devnet) (v0.1.0 with off-ramp payout stub)
 - Config PDA: [`A1fy8dwFrrS8U1jgiYzA7DtEbEYtvgP5AzqY9wNwaYek`](https://explorer.solana.com/address/A1fy8dwFrrS8U1jgiYzA7DtEbEYtvgP5AzqY9wNwaYek?cluster=devnet)
 - Treasury USDC ATA: [`P5hH8Ru8WwRkPy2rvxXzDRQpVGkedaDvU2RkPcpVjAe`](https://explorer.solana.com/address/P5hH8Ru8WwRkPy2rvxXzDRQpVGkedaDvU2RkPcpVjAe?cluster=devnet)
 - Frontend: [invoiceflow-five-jet.vercel.app](https://invoiceflow-five-jet.vercel.app)
@@ -16,7 +16,7 @@
 
 [![Watch the 3-min demo](https://img.youtube.com/vi/9ck7z-tXois/maxresdefault.jpg)](https://youtu.be/9ck7z-tXois)
 
-> 4 minutes — freelancer creates an invoice in USDC, client funds in one click, three milestones approve out, freelancer triggers the v2 Raenest off-ramp intent on-chain.
+> 4 minutes — freelancer creates an invoice in USDC, client funds in one click, three milestones approve out, freelancer triggers the v2 off-ramp intent on-chain.
 
 ```
 freelancer creates invoice  ──►  client funds in USDC  ──►  client approves milestone  ──►  freelancer's wallet
@@ -31,13 +31,13 @@ freelancer creates invoice  ──►  client funds in USDC  ──►  client a
 
 | | Problem | How InvoiceFlow handles it |
 |---|---|---|
-| 1 | **Custodial freeze risk.** Stripe / PayPal / Wise routinely freeze Nigerian freelancer accounts, holding weeks of income. | Vault is a Solana PDA — no human can freeze it. Not us, not Raenest, not anyone. |
+| 1 | **Custodial freeze risk.** Stripe / PayPal / Wise routinely freeze Nigerian freelancer accounts, holding weeks of income. | Vault is a Solana PDA — no human can freeze it. Not us, not the off-ramp partner, not anyone. |
 | 2 | **Trust gaps in both directions.** Freelancer ships first or client pays first; either side can be burned. | Milestones release on client approval. Auto-release fires after a configurable timeout if the client ghosts. |
 | 3 | **High fees + slow settlement.** Cards: 4–8%. Wires: $25 + 3 days. P2P USDT: grey-market and unauditable. | 0.5% protocol fee, <5s settlement, every release on Solana Explorer. |
 
 ## Capabilities
 
-**Freelancer can:** create up to 5 milestones in one tx · lock the invoice to a specific client wallet, or leave it open · share a URL the client opens to fund · receive USDC directly to their wallet on each approval · attach an off-chain metadata URI (Arweave / IPFS) so clients can verify each milestone's description against its on-chain sha256 · force-release a milestone if the client goes silent past the dispute window · cancel an unfunded invoice and recover the SOL rent · submit a signed Raenest off-ramp intent on-chain (v2 stub).
+**Freelancer can:** create up to 5 milestones in one tx · lock the invoice to a specific client wallet, or leave it open · share a URL the client opens to fund · receive USDC directly to their wallet on each approval · attach an off-chain metadata URI (Arweave / IPFS) so clients can verify each milestone's description against its on-chain sha256 · force-release a milestone if the client goes silent past the dispute window · cancel an unfunded invoice and recover the SOL rent · submit a signed off-ramp intent on-chain (v2 stub).
 
 **Client can:** fund the full invoice in one click · approve milestones one at a time with fee preview · raise a dispute that pauses auto-release · resolve their own dispute when work is fixed · trust an optional third-party arbiter (set by the freelancer at create time) to adjudicate genuine disputes by splitting the vault between the two parties.
 
@@ -134,7 +134,7 @@ In the Vercel dashboard set these env vars (Production + Preview):
 
 ### (Optional) Persistent Postgres indexer + Helius webhook
 
-The dashboard works out of the box with a 60-second server cache fronting direct chain reads — fine at hackathon scale. For mainnet-shaped traffic, swap in a persistent Postgres-backed indexer fed by Helius webhooks:
+The dashboard works out of the box with a 60-second server cache fronting direct chain reads — fine for low traffic. For mainnet-shaped traffic, swap in a persistent Postgres-backed indexer fed by Helius webhooks:
 
 1. **Provision a Postgres database.** Any provider works; the cheapest paths are:
    - **Neon** (free tier, ~30s signup): https://neon.tech → create project → copy the `postgres://...` connection string with `?sslmode=require`
@@ -167,12 +167,12 @@ The dashboard works out of the box with a 60-second server cache fronting direct
 
 ## Roadmap
 
-**Why this is a Raenest *partnership*, not a competitor.** InvoiceFlow doesn't move money to or from bank accounts — we don't hold reserves, don't have banking licences, don't want to. We're the contract layer that makes "client in NYC pays freelancer in Lagos" go from a 5-day Stripe-or-Wise dance into one-click escrow → approve → off-ramp. Raenest already has the bank relationships, the regulatory licences, and the NGN liquidity. The freelancer sees one product; under the hood it's two complementary fees: ours for the contract leg, Raenest's for the settlement leg.
+**Why off-ramps are a *partnership* layer, not part of InvoiceFlow.** InvoiceFlow doesn't move money to or from bank accounts — we don't hold reserves, don't have banking licences, don't want to. We're the contract layer that makes "client in NYC pays freelancer in Lagos" go from a 5-day Stripe-or-Wise dance into one-click escrow → approve → off-ramp. Off-ramp providers already have the bank relationships, the regulatory licences, and the local-currency liquidity. The freelancer sees one product; under the hood it's two complementary fees: ours for the contract leg, the off-ramp's for the settlement leg.
 
 **v2 — off-chain wiring (on-chain handshake already shipped):**
 
-- ✅ `request_raenest_payout` instruction + `RaenestPayoutRequested` event are live on devnet. The "🇳🇬 Convert to NGN" button on the invoice page submits a signed intent.
-- 🔜 Off-chain Raenest bridge: we subscribe to program logs and calling Raenest's USDC→NGN settlement API. Blocked on Raenest API credentials.
+- ✅ Off-ramp payout instruction + `RaenestPayoutRequested` event are live on devnet. The "Cash out" button on the invoice page submits a signed intent.
+- 🔜 Off-chain bridge: subscribe to program logs and call an off-ramp provider's USDC→local-currency settlement API. Pluggable per provider.
 - ✅ Helius-webhook indexer feeding a Postgres cache for the dashboard — shipped (see v3 row).
 
 **v3 — protocol features:**

@@ -59,7 +59,7 @@ pub enum InvoiceError {
     #[msg("Payout amount must be greater than zero")]
     InvalidPayoutAmount,
 
-    #[msg("Raenest account id must be 1..=64 UTF-8 chars")]
+    #[msg("Payout account id must be 1..=64 UTF-8 chars")]
     InvalidRaenestAccountId,
 
     #[msg("Memo exceeds 200 characters")]

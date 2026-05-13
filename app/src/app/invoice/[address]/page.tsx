@@ -17,7 +17,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/Skeleton";
-import { RaenestPayoutModal } from "@/components/RaenestPayoutModal";
+import { CashOutModal } from "@/components/CashOutModal";
 import { ArbiterModal } from "@/components/ArbiterModal";
 import {
   deriveConfigPda,
@@ -450,9 +450,9 @@ export default function InvoicePage() {
               <button
                 onClick={() => setPayoutOpen(true)}
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-4 text-sm font-medium text-accent hover:bg-accent hover:text-canvas"
-                title="v2 preview: convert USDC to NGN via Raenest"
+                title="v2 preview: cash out USDC to local currency"
               >
-                <span className="text-xs">🇳🇬</span> Convert to NGN
+                Cash out
               </button>
             )}
             {isArbiter && invoice.status === "disputed" && (
@@ -688,7 +688,7 @@ export default function InvoicePage() {
         )}
       </main>
       <Footer />
-      <RaenestPayoutModal
+      <CashOutModal
         open={payoutOpen}
         onClose={() => setPayoutOpen(false)}
         freelancer={invoice.freelancer}

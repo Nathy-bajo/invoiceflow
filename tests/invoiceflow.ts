@@ -495,7 +495,7 @@ describe("invoiceflow", () => {
     }
   });
 
-  it("emits a RaenestPayoutRequested event for the v2 off-ramp stub", async () => {
+  it("emits a payout-requested event for the v2 off-ramp stub", async () => {
     let captured: any = null;
     const subId = program.addEventListener("raenestPayoutRequested", (ev) => {
       captured = ev;
@@ -505,7 +505,7 @@ describe("invoiceflow", () => {
         .requestRaenestPayout(
           new BN(497.5 * ONE_USDC),
           invoiceA.pda,
-          "RAENEST-VA-12345",
+          "PAYOUT-VA-12345",
           "InvoiceFlow milestone 1 payout"
         )
         .accounts({ freelancer: freelancer.publicKey })
@@ -517,14 +517,14 @@ describe("invoiceflow", () => {
       expect(captured, "event was emitted").to.not.equal(null);
       expect(captured.freelancer.toBase58()).to.equal(freelancer.publicKey.toBase58());
       expect(captured.amount.toNumber()).to.equal(497.5 * ONE_USDC);
-      expect(captured.raenestAccountId).to.equal("RAENEST-VA-12345");
+      expect(captured.raenestAccountId).to.equal("PAYOUT-VA-12345");
       expect(captured.sourceInvoice.toBase58()).to.equal(invoiceA.pda.toBase58());
     } finally {
       await program.removeEventListener(subId);
     }
   });
 
-  it("rejects an empty Raenest account id", async () => {
+  it("rejects an empty payout account id", async () => {
     try {
       await program.methods
         .requestRaenestPayout(new BN(1), null, "", "")
